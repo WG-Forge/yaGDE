@@ -1,1 +1,1 @@
-# yaGDE
+# Yet Another Game Development Entity
