@@ -2,6 +2,7 @@ from typing import *
 import socket
 import json
 import struct
+import logging as log
 
 from client.actions import *
 from client.responses import *
@@ -22,7 +23,7 @@ def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
 
     if action is not None:
         data = action._asdict()
-        data = remove_nones(data)
+        # data = remove_nones(data)
         data = json.dumps(data).encode("utf-8")
     else:
         data = b''
@@ -105,14 +106,20 @@ class Session:
     def action(self, t: ActionType, action: Optional[Action] = None) -> ActionResponse | ErrorResponse:
         data = serialize_action(t, action)
         self._sendall(data)
+        log.debug(f"Sent action {str(t)} - {action}, encoded: {data}")
         header = self._recvall(8)
         c, l = deserialize_response_header(header)
+        log.debug(f"Received header: code {str(c)}, length {l}")
         data = self._recvall(l)
         match c:
             case ResponseCode.OKEY:
-                return deserialize_response_data(t, data)
+                response = deserialize_response_data(t, data)
+                log.debug(f"Received response: {response}")
+                return response
             case _:
-                return deserialize_error_response(c, data)
+                response = deserialize_error_response(c, data)
+                log.error(f"Received error response: {response}")
+                return response
 
     def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:
         return self.action(ProtocolAction.LOGIN, action)

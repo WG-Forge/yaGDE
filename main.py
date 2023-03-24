@@ -1,10 +1,13 @@
 import socket
-import json
-import struct
+import logging
 
 from client.session import Session
 from client.actions import *
 from client.responses import *
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(message)s",
+    level=logging.DEBUG)
 
 
 def handle_response(resp):
