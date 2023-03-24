@@ -13,12 +13,12 @@ class Hex(NamedTuple):
 
 
 class ProtocolAction(IntEnum):
-    LOGIN = 0
-    LOGOUT = 1
-    MAP = 2
-    GAME_STATE = 3
-    GAME_ACTIONS = 4
-    TURN = 5
+    LOGIN = 1
+    LOGOUT = 2
+    MAP = 3
+    GAME_STATE = 4
+    GAME_ACTIONS = 5
+    TURN = 6
 
 
 class GameAction(IntEnum):
@@ -27,4 +27,4 @@ class GameAction(IntEnum):
     SHOOT = 102
 
 
-Action = ProtocolAction | GameAction
+ActionType = ProtocolAction | GameAction

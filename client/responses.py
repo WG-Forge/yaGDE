@@ -65,8 +65,9 @@ class GameStateResponse(NamedTuple):
     finished: bool
     vehicles: Mapping[VehicleId, Vehicle]
     attack_matrix: Mapping[PlayerId, List[PlayerId]]  # don't know exact type
+    win_points: WinPoints
     winner: Optional[PlayerId]
-    catapult_usage: List[Hex]
+    catapult_usage: List[Hex] = []
 
 
 class PlayerAction(NamedTuple):
@@ -79,7 +80,11 @@ class GameActionsResponse(NamedTuple):
     actions: List[PlayerAction]
 
 
+ActionResponse = LoginResponse | MapResponse | GameStateResponse | GameActionsResponse
+
+
 class ResponseCode(IntEnum):
+    OKEY = 0
     BAD_COMMAND = 1
     ACCESS_DENIED = 2
     INAPPROPRIATE_GAME_STATE = 3

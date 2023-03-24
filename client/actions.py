@@ -24,3 +24,6 @@ class MoveAction(NamedTuple):
 class ShootAction(NamedTuple):
     vehicle_id: VehicleId
     target: Hex
+
+
+Action = LoginAction | ChatAction | MoveAction | ShootAction

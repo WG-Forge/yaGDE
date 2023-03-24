@@ -1,48 +1,154 @@
 from typing import *
+import socket
+import json
+import struct
 
 from client.actions import *
 from client.responses import *
 
 
+def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
+    """
+    Serialize an action to bytes.
+    The format is:
+    4 bytes: action type
+    4 bytes: length of the JSON data
+    n bytes: JSON data in UTF-8
+    """
+
+    def remove_nones(d: dict) -> dict:
+        return {k: remove_nones(v) if isinstance(v, dict) else v
+                for k, v in d.items() if v is not None}
+
+    if action is not None:
+        data = action._asdict()
+        data = remove_nones(data)
+        data = json.dumps(data).encode("utf-8")
+    else:
+        data = b''
+
+    return struct.pack("<II", t, len(data)) + data
+
+
+def deserialize_response_header(data: bytes) -> tuple[ResponseCode, int]:
+    """
+    Deserialize the header of a response.
+    The format is:
+    4 bytes: response code
+    4 bytes: length of the JSON data
+    """
+    c, l = struct.unpack("<II", data)
+    return ResponseCode(c), l
+
+
+def deserialize_response_data(t: ActionType, data: bytes) -> ActionResponse | None:
+    """
+    Deserialize the data of a response.
+    The format is:
+    n bytes: JSON data in UTF-8
+    """
+    if len(data) == 0:
+        return None
+
+    data = data.decode("utf-8")
+    data = json.loads(data)
+    match t:
+        case ProtocolAction.LOGIN:
+            return LoginResponse(**data)
+        case ProtocolAction.MAP:
+            return MapResponse(**data)
+        case ProtocolAction.GAME_STATE:
+            return GameStateResponse(**data)
+        case ProtocolAction.GAME_ACTIONS:
+            return GameActionsResponse(**data)
+        case _:
+            raise ValueError(f"Unknown action type: {t}")
+
+
+def deserialize_error_response(c: ResponseCode, data: bytes) -> ErrorResponse:
+    """
+    Deserialize the data of an error response.
+    The format is:
+    n bytes: JSON data in UTF-8
+    """
+    data = data.decode("utf-8")
+    data = json.loads(data)
+    return ErrorResponse(c, data["error_message"])
+
+
 class Session:
-    def __init__(self, addr: str):
-        self.server_addr = addr
+    def __init__(self, addr: str, port: int):
+        self.server_addr = (addr, port)
+        self.sock = None
 
     def __enter__(self):
         self.connect()
+        return self
 
     def __exit__(self, exc_type, exc_value, tb):
         self.disconnect()
 
     def connect(self):
-        pass
+        if self.sock is not None:
+            raise RuntimeError("Already connected")
+
+        self.sock = socket.create_connection(self.server_addr)
 
     def disconnect(self):
-        pass
+        if self.sock is None:
+            raise RuntimeError("Not connected")
+
+        self.sock.shutdown(socket.SHUT_RDWR)
+        self.sock.close()
+        self.sock = None
+
+    def action(self, t: ActionType, action: Optional[Action] = None) -> ActionResponse | ErrorResponse:
+        data = serialize_action(t, action)
+        self._sendall(data)
+        header = self._recvall(8)
+        c, l = deserialize_response_header(header)
+        data = self._recvall(l)
+        match c:
+            case ResponseCode.OKEY:
+                return deserialize_response_data(t, data)
+            case _:
+                return deserialize_error_response(c, data)
 
     def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.LOGIN, action)
 
     def logout(self) -> None | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.LOGOUT)
 
     def map(self) -> MapResponse | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.MAP)
 
     def game_state(self) -> GameStateResponse | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.GAME_STATE)
 
     def game_actions(self) -> GameActionsResponse | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.GAME_ACTIONS)
 
     def turn(self) -> None | ErrorResponse:
-        pass
+        return self.action(ProtocolAction.TURN)
 
     def chat(self, action: ChatAction) -> None | ErrorResponse:
-        pass
+        return self.action(GameAction.CHAT, action)
 
     def move(self, action: MoveAction) -> None | ErrorResponse:
-        pass
+        return self.action(GameAction.CHAT, action)
 
     def shoot(self, action: ShootAction) -> None | ErrorResponse:
-        pass
+        return self.action(GameAction.CHAT, action)
+
+    def _sendall(self, data: bytes) -> None:
+        self.sock.sendall(data)
+
+    def _recvall(self, n: int) -> bytes:
+        data = b''
+        while len(data) < n:
+            packet = self.sock.recv(n - len(data))
+            if not packet:
+                raise RuntimeError("Socket connection broken")
+            data += packet
+        return data
