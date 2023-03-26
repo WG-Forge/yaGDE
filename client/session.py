@@ -23,7 +23,7 @@ def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
 
     if action is not None:
         data = action._asdict()
-        # data = remove_nones(data)
+        data = remove_nones(data)
         data = json.dumps(data).encode("utf-8")
     else:
         data = b''

@@ -4,6 +4,9 @@ import logging
 from client.session import Session
 from client.actions import *
 from client.responses import *
+from player.player import Player
+from player.engine import Bot
+
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
@@ -20,13 +23,10 @@ def handle_response(resp):
 
 if __name__ == "__main__":
     with Session("wgforge-srv.wargaming.net", 443) as s:
-        handle_response(s.login(LoginAction("yagde-test-user")))
-        while True:
-            game_state = handle_response(s.game_state())
-            if game_state.current_turn == game_state.num_turns:
-                break
-            game_map = handle_response(s.map())
-            game_actions = handle_response(s.game_actions())
-            print(game_state.current_turn, game_map)
-            handle_response(s.turn())
+        player_info = s.login(LoginAction("yagde-test-user"))
+        player_bot = Bot(s, player_info)
+        handle_response(player_info)
+
+        player_bot.bot_engine()
+        
         handle_response(s.logout())
