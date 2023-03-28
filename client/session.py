@@ -55,13 +55,13 @@ def deserialize_response_data(t: ActionType, data: bytes) -> ActionResponse | No
     data = json.loads(data)
     match t:
         case ProtocolAction.LOGIN:
-            return LoginResponse(**data)
+            return LoginResponse.from_json(data)
         case ProtocolAction.MAP:
-            return MapResponse(**data)
+            return MapResponse.from_json(data)
         case ProtocolAction.GAME_STATE:
-            return GameStateResponse(**data)
+            return GameStateResponse.from_json(data)
         case ProtocolAction.GAME_ACTIONS:
-            return GameActionsResponse(**data)
+            return GameActionsResponse.from_json(data)
         case _:
             raise ValueError(f"Unknown action type: {t}")
 

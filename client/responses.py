@@ -10,6 +10,14 @@ class LoginResponse(NamedTuple):
     name: str
     is_observer: bool
 
+    @staticmethod
+    def from_json(j) -> 'LoginResponse':
+        return LoginResponse(
+            idx=PlayerId.from_json(j['idx']),
+            name=str(j['name']),
+            is_observer=bool(j['is_observer']),
+        )
+
 
 class VehicleType(Enum):
     LIGHT_TANK = 0
@@ -17,6 +25,10 @@ class VehicleType(Enum):
     HEAVY_TANK = 2
     AT_SPG = 3
     SPG = 4
+
+    @staticmethod
+    def from_json(j) -> 'VehicleType':
+        return enum_from_json(VehicleType, j)
 
 
 class Vehicle(NamedTuple):
@@ -28,31 +40,80 @@ class Vehicle(NamedTuple):
     capture_points: int
     shoot_range_bonus: int
 
+    @staticmethod
+    def from_json(j) -> 'Vehicle':
+        return Vehicle(
+            player_id=PlayerId.from_json(j['player_id']),
+            vehicle_type=VehicleType.from_json(j['vehicle_type']),
+            health=int(j['health']),
+            spawn_position=Hex.from_json(j['spawn_position']),
+            position=Hex.from_json(j['position']),
+            capture_points=int(j['capture_points']),
+            shoot_range_bonus=int(j['shoot_range_bonus']),
+        )
+
 
 class MapContent(Enum):
     BASE = 0
-    OBSTAACLE = 1
+    OBSTACLE = 1
     LIGHT_REPAIR = 2
     HARD_REPAIR = 3
     CATAPULT = 4
+
+    @staticmethod
+    def from_json(j) -> 'MapContent':
+        return enum_from_json(MapContent, j)
 
 
 class MapResponse(NamedTuple):
     size: int
     name: str
-    spawn_points: List[Mapping[VehicleType, List[Hex]]]
-    content: Mapping[MapContent, List[Hex]]
+    spawn_points: List[Dict[VehicleType, List[Hex]]]
+    content: Dict[MapContent, List[Hex]]
+
+    @staticmethod
+    def from_json(j) -> 'MapResponse':
+        return MapResponse(
+            size=int(j['size']),
+            name=str(j['name']),
+            spawn_points=[
+                {
+                    VehicleType.from_json(k): [Hex.from_json(h) for h in v]
+                    for k, v in spawn_point.items()
+                }
+                for spawn_point in j['spawn_points']
+            ],
+            content={
+                MapContent.from_json(k): [Hex.from_json(h) for h in v]
+                for k, v in j['content'].items()
+            },
+        )
 
 
 class PlayerState(NamedTuple):
-    idx: int
+    idx: PlayerId
     name: str
     is_observer: bool
+
+    @staticmethod
+    def from_json(j) -> 'PlayerState':
+        return PlayerState(
+            idx=PlayerId.from_json(j['idx']),
+            name=str(j['name']),
+            is_observer=bool(j['is_observer']),
+        )
 
 
 class WinPoints(NamedTuple):
     capture: int
     kill: int
+
+    @staticmethod
+    def from_json(j) -> 'WinPoints':
+        return WinPoints(
+            capture=int(j['capture']),
+            kill=int(j['kill']),
+        )
 
 
 class GameStateResponse(NamedTuple):
@@ -60,14 +121,37 @@ class GameStateResponse(NamedTuple):
     num_turns: int
     current_turn: int
     players: List[PlayerState]
-    observers: List[str]  # don't know exact type
+    observers: List[PlayerId]
     current_player_idx: PlayerId
     finished: bool
-    vehicles: Mapping[VehicleId, Vehicle]
-    attack_matrix: Mapping[PlayerId, List[PlayerId]]  # don't know exact type
+    vehicles: Dict[VehicleId, Vehicle]
+    attack_matrix: Dict[PlayerId, List[PlayerId]]  # don't know exact type
     win_points: WinPoints
     winner: Optional[PlayerId]
-    catapult_usage: List[Hex] = []
+    catapult_usage: List[Hex]
+
+    @staticmethod
+    def from_json(j) -> 'GameStateResponse':
+        return GameStateResponse(
+            num_players=int(j['num_players']),
+            num_turns=int(j['num_turns']),
+            current_turn=int(j['current_turn']),
+            players=[PlayerState.from_json(p) for p in j['players']],
+            observers=[PlayerId.from_json(o) for o in j['observers']],
+            current_player_idx=PlayerId.from_json(j['current_player_idx']),
+            finished=bool(j['finished']),
+            vehicles={
+                VehicleId.from_json(k): Vehicle.from_json(v)
+                for k, v in j['vehicles'].items()
+            },
+            attack_matrix={
+                PlayerId.from_json(k): [PlayerId.from_json(p) for p in v]
+                for k, v in j['attack_matrix'].items()
+            },
+            win_points=WinPoints.from_json(j['win_points']),
+            winner=PlayerId.from_json(j['winner']) if j['winner'] else None,
+            catapult_usage=[Hex.from_json(h) for h in j['catapult_usage']],
+        )
 
 
 class PlayerAction(NamedTuple):
@@ -75,9 +159,32 @@ class PlayerAction(NamedTuple):
     action_type: GameAction
     data: ChatAction | MoveAction | ShootAction  # depends on action_type
 
+    @staticmethod
+    def from_json(j) -> 'PlayerAction':
+        action_type = GameAction.from_json(j['action_type'])
+        match action_type:
+            case GameAction.CHAT:
+                data = ChatAction.from_json(j['data'])
+            case GameAction.MOVE:
+                data = MoveAction.from_json(j['data'])
+            case GameAction.SHOOT:
+                data = ShootAction.from_json(j['data'])
+
+        return PlayerAction(
+            player_id=PlayerId.from_json(j['player_id']),
+            action_type=action_type,
+            data=data
+        )
+
 
 class GameActionsResponse(NamedTuple):
     actions: List[PlayerAction]
+
+    @staticmethod
+    def from_json(j) -> 'GameActionsResponse':
+        return GameActionsResponse(
+            actions=[PlayerAction.from_json(a) for a in j['actions']]
+        )
 
 
 ActionResponse = LoginResponse | MapResponse | GameStateResponse | GameActionsResponse

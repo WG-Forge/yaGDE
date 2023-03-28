@@ -1,4 +1,3 @@
-import socket
 import logging
 
 from client.session import Session
@@ -6,7 +5,6 @@ from client.actions import *
 from client.responses import *
 from player.player import Player
 from player.engine import Bot
-
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
@@ -28,5 +26,5 @@ if __name__ == "__main__":
         handle_response(player_info)
 
         player_bot.bot_engine()
-        
+
         handle_response(s.logout())
