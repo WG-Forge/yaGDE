@@ -9,7 +9,7 @@ Vehicles = NewType("Vehicles", Mapping[VehicleId, Vehicle])
 
 
 def map_distance(node1: Hex, node2: Hex):
-    return (abs(node1['x'] - node2['x']) + abs(node1['y'] - node2['y']) + abs(node1['z'] - node2['z'])) / 2
+    return (abs(node1.x - node2.x) + abs(node1.y - node2.y) + abs(node1.z - node2.z)) / 2
 
 
 class Player:
@@ -24,9 +24,9 @@ class Player:
 
     def update_vehicles(self, vehicles: Vehicles):
         self._allyVehicles = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
-        ) if vehicle['player_id'] == self._playerInfo.idx}
+        ) if vehicle.player_id == self._playerInfo.idx}
         self._enemyVehicle = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
-        ) if vehicle['player_id'] != self._playerInfo.idx}
+        ) if vehicle.player_id != self._playerInfo.idx}
 
     def move_vehicle(self, vehicle_id: VehicleId, x: int, y: int, z: int):
         self._session.move(MoveAction(vehicle_id, Hex(x, y, z)))

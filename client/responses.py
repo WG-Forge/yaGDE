@@ -49,7 +49,7 @@ class Vehicle(NamedTuple):
             spawn_position=Hex.from_json(j['spawn_position']),
             position=Hex.from_json(j['position']),
             capture_points=int(j['capture_points']),
-            shoot_range_bonus=int(j['shoot_range_bonus']),
+            shoot_range_bonus=int(j['shoot_range_bonus']) if 'shoot_range_bonus' in j else -1,
         )
 
 
@@ -105,6 +105,7 @@ class PlayerState(NamedTuple):
 
 
 class WinPoints(NamedTuple):
+    player_id = PlayerId
     capture: int
     kill: int
 
@@ -126,7 +127,7 @@ class GameStateResponse(NamedTuple):
     finished: bool
     vehicles: Dict[VehicleId, Vehicle]
     attack_matrix: Dict[PlayerId, List[PlayerId]]  # don't know exact type
-    win_points: WinPoints
+    win_points: Dict[PlayerId, WinPoints]
     winner: Optional[PlayerId]
     catapult_usage: List[Hex]
 
@@ -148,9 +149,10 @@ class GameStateResponse(NamedTuple):
                 PlayerId.from_json(k): [PlayerId.from_json(p) for p in v]
                 for k, v in j['attack_matrix'].items()
             },
-            win_points=WinPoints.from_json(j['win_points']),
+            win_points={PlayerId.from_json(k): WinPoints.from_json(v)
+                        for k, v in j['win_points'].items()},
             winner=PlayerId.from_json(j['winner']) if j['winner'] else None,
-            catapult_usage=[Hex.from_json(h) for h in j['catapult_usage']],
+            catapult_usage=[Hex.from_json(h) for h in j['catapult_usage']] if 'catapult_usage' in j else [],
         )
 
 

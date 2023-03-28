@@ -24,8 +24,8 @@ class Bot(Player):
         target = None
         minHp = maxHp
         for vehicle_id, vehicle in self._enemyVehicle:
-            if self.__is_enemy_in_range(self, my_vehicle, vehicle) and minHp >= vehicle['health']:
-                minHp = vehicle['health']
+            if self.__is_enemy_in_range(self, my_vehicle, vehicle) and minHp >= vehicle.health:
+                minHp = vehicle.health
                 target = vehicle
         if target is not None:
             Player.shoot_vehicle(self, target)
