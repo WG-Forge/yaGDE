@@ -23,8 +23,10 @@ class AStarPathfinding:
     # 
     # <param name="startPoint">Start Hex.</param>
     # <param name="endPoint">Destination Hex.</param>
+    # <param name="list_exclude_nodes">Excluded nodes from search.</param>
+    # Trenutno ne proverava granice HEX mape jer idemo samo ka centru ali ako se to promeni onda se mora dodati i ta provera
     @staticmethod
-    def FindPath(start_point: HexNode, end_point: HexNode) -> list:
+    def FindPath(start_point: HexNode, end_point: HexNode, list_exclude_nodes: []) -> list:
         openPathHexs = []
         closedPathHexs = []
 
@@ -58,9 +60,9 @@ class AStarPathfinding:
             # Investigating each adjacent Hex of the current Hex.
             for adjacentHex in AStarPathfinding.getNeighbourHex(currentHex, end_point):
 
-                # # Ignore not walkable adjacent Hexs.
-                # if (adjacentHex.isObstacle)
-                #     continue  POSLE IMPLEMENTIRAJ sa listom tenkova
+                # Ignore not walkable adjacent Hexs.
+                if adjacentHex in list_exclude_nodes:
+                    continue
 
                 # Ignore the Hex if it's already in the closed list.
                 if adjacentHex in closedPathHexs:
@@ -130,7 +132,6 @@ class AStarPathfinding:
                 node.F = node.g + node.h
 
         return listHexs
-    # TREBAS DA DODAS parametre za proveru ogranicenja mape
 
     @staticmethod
     def getNeighbourHexFromClosedPathHexs(current_hex, closedPathHexs):
@@ -168,7 +169,7 @@ class AStarPathfinding:
 
 
 # TEST
-start_point = HexNode(7, -5, -2)
+start_point = HexNode(7, -4, -3)
 end_point = HexNode(0, 0, 0)
 
-print(AStarPathfinding.FindPath(start_point, end_point))
+print(AStarPathfinding.FindPath(start_point, end_point, [HexNode(6, -4, -2), HexNode(6, -3, -3), HexNode(1, -1, 0)]))
