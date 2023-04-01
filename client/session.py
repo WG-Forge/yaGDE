@@ -17,13 +17,20 @@ def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
     n bytes: JSON data in UTF-8
     """
 
-    def remove_nones(d: dict) -> dict:
-        return {k: remove_nones(v) if isinstance(v, dict) else v
-                for k, v in d.items() if v is not None}
+    def dictify(value) -> dict:
+        """
+        Convert a namedtuple to a dict recursively.
+        Remove nones. It will not work with namedtuples nested'
+        withing lists, dicts, etc.
+        """
+        if hasattr(value, "_asdict"):
+            return {k: dictify(v) for k, v in
+                    value._asdict().items() if v is not None}
+
+        return value
 
     if action is not None:
-        data = action._asdict()
-        data = remove_nones(data)
+        data = dictify(action)
         data = json.dumps(data).encode("utf-8")
     else:
         data = b''
