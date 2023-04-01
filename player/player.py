@@ -28,8 +28,8 @@ class Player:
         self._enemyVehicle = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
         ) if vehicle.player_id != self._playerInfo.idx}
 
-    def move_vehicle(self, vehicle_id: VehicleId, x: int, y: int, z: int):
-        self._session.move(MoveAction(vehicle_id, Hex(x, y, z)))
+    def move_vehicle(self, vehicle_id: VehicleId, coordinate: Hex):
+        self._session.move(MoveAction(vehicle_id, coordinate))
 
-    def shoot_vehicle(self, vehicle_id: VehicleId, x: int, y: int, z: int):
-        self._session.shoot(ShootAction(vehicle_id, Hex(x, y, z)))
+    def shoot_vehicle(self, vehicle_id: VehicleId, target: Vehicle):
+        self._session.shoot(ShootAction(vehicle_id, Hex(target.position.x, target.position.y, target.position.z)))

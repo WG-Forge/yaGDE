@@ -1,3 +1,4 @@
+from typing import *
 
 class HexNode:
     def __init__(self, x=0, y=0, z=0):
@@ -26,7 +27,7 @@ class AStarPathfinding:
     # <param name="list_exclude_nodes">Excluded nodes from search.</param>
     # Trenutno ne proverava granice HEX mape jer idemo samo ka centru ali ako se to promeni onda se mora dodati i ta provera
     @staticmethod
-    def FindPath(start_point: HexNode, end_point: HexNode, list_exclude_nodes: []) -> list:
+    def FindPath(start_point: HexNode, end_point: HexNode, list_exclude_nodes: List) -> list:
         openPathHexs = []
         closedPathHexs = []
 
@@ -169,7 +170,7 @@ class AStarPathfinding:
 
 
 # TEST
-start_point = HexNode(7, -4, -3)
-end_point = HexNode(0, 0, 0)
+# start_point = HexNode(7, -4, -3)
+# end_point = HexNode(0, 0, 0)
 
-print(AStarPathfinding.FindPath(start_point, end_point, [HexNode(6, -4, -2), HexNode(6, -3, -3), HexNode(1, -1, 0)]))
+# print(AStarPathfinding.FindPath(start_point, end_point, [HexNode(6, -4, -2), HexNode(6, -3, -3), HexNode(1, -1, 0)]))

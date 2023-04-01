@@ -20,8 +20,7 @@ def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
     def dictify(value) -> dict:
         """
         Convert a namedtuple to a dict recursively.
-        Remove nones. It will not work with namedtuples nested'
-        withing lists, dicts, etc.
+        Remove nones.
         """
         if hasattr(value, "_asdict"):
             return {k: dictify(v) for k, v in
@@ -150,10 +149,10 @@ class Session:
         return self.action(GameAction.CHAT, action)
 
     def move(self, action: MoveAction) -> None | ErrorResponse:
-        return self.action(GameAction.CHAT, action)
+        return self.action(GameAction.MOVE, action)
 
     def shoot(self, action: ShootAction) -> None | ErrorResponse:
-        return self.action(GameAction.CHAT, action)
+        return self.action(GameAction.SHOOT, action)
 
     def _sendall(self, data: bytes) -> None:
         self.sock.sendall(data)
