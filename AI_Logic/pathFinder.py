@@ -28,6 +28,16 @@ class AStarPathfinding:
     # Trenutno ne proverava granice HEX mape jer idemo samo ka centru ali ako se to promeni onda se mora dodati i ta provera
     @staticmethod
     def FindPath(start_point: HexNode, end_point: HexNode, list_exclude_nodes: List) -> list:
+
+        if end_point in list_exclude_nodes:
+            list_neighbour = AStarPathfinding.getNeighbourHex(end_point, None)
+            for i in range(len(list_neighbour)):
+                if list_neighbour[i] not in list_exclude_nodes:
+                    end_point = list_neighbour[i]
+                    break
+            
+            return start_point
+
         openPathHexs = []
         closedPathHexs = []
 
