@@ -35,8 +35,7 @@ class AStarPathfinding:
                 if list_neighbour[i] not in list_exclude_nodes:
                     end_point = list_neighbour[i]
                     break
-            
-            return start_point
+            return [start_point]
 
         openPathHexs = []
         closedPathHexs = []

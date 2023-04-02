@@ -21,17 +21,19 @@ def handle_response(resp):
 
 if __name__ == "__main__":
     with Session("wgforge-srv.wargaming.net", 443) as s:
-        player_info = s.login(LoginAction("yagde-test-user1", game="GameYagde2", num_players=2))
+        player_info = s.login(LoginAction("yagde-test-user1"))
         player_bot = Bot(s, player_info)
         handle_response(player_info)
 
+        # busy wait for second player to join
         not_all_connected = True
 
+        """ 
         while not_all_connected:
-            game_status = s.game_state()
-            if game_status.num_players >= 2:
-                not_all_connected = False
-
+           game_status = s.game_state()
+           if game_status.num_players >= 2:
+               not_all_connected = False
+        """
         player_bot.bot_engine()
 
         handle_response(s.logout())
