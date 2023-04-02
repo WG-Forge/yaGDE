@@ -34,7 +34,7 @@ class Bot(Player):
         return True
 
     def __is_enemy_in_range(self, game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle) -> bool:
-        distance = map_distance(my_vehicle['position'], enemy_vehicle['position'])
+        distance = map_distance(my_vehicle.position, enemy_vehicle.position)
         if distance ==  2 and self.__check_neutrality(game_actions, enemy_vehicle):
             return True
         return False
@@ -47,7 +47,7 @@ class Bot(Player):
         target = None
         minHp = maxHp
         for vehicle_id, vehicle in self._enemyVehicles.items():
-            if self.__is_enemy_in_range(self, game_actions, my_vehicle, vehicle) and minHp >= vehicle.health:
+            if self.__is_enemy_in_range(game_actions, my_vehicle, vehicle) and minHp >= vehicle.health:
                 minHp = vehicle.health
                 target = vehicle
         if target is not None:
@@ -105,11 +105,8 @@ class Bot(Player):
                 # try to shot
                 shooted = self._shoot_with_vehicle(vehicle_id, vehicle)
 
-                # now move to the center
-                self.__execute_movement(vehicle_id, vehicle)
-
-                # if didn't use shot use it now
+                # now move to the center if didn't shot
                 if shooted == False:
-                    self._shoot_with_vehicle(vehicle_id, vehicle)
+                    self.__execute_movement(vehicle_id, vehicle)
 
             handle_response(self._session.turn())
