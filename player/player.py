@@ -25,7 +25,7 @@ class Player:
     def update_vehicles(self, vehicles: Vehicles):
         self._allyVehicles = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
         ) if vehicle.player_id == self._playerInfo.idx}
-        self._enemyVehicle = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
+        self._enemyVehicles = {vehicle_id: vehicle for vehicle_id, vehicle in vehicles.items(
         ) if vehicle.player_id != self._playerInfo.idx}
 
     def move_vehicle(self, vehicle_id: VehicleId, coordinate: Hex):

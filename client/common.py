@@ -13,6 +13,9 @@ class Hex(NamedTuple):
     y: int
     z: int
 
+    def __eq__(self, other):
+        return (self.x, self.y, self.z) == (other.x, other.y, other.z)
+
     @staticmethod
     def from_json(j) -> 'Hex':
         return Hex(**{
