@@ -5,6 +5,7 @@ from client.actions import *
 from client.responses import *
 from player.player import Player
 from player.engine import Bot
+from model.hex import *
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         # busy wait for second player to join
         not_all_connected = True
 
-        """ 
+        """
         while not_all_connected:
            game_status = s.game_state()
            if game_status.num_players >= 2:

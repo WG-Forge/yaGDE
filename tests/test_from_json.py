@@ -97,10 +97,16 @@ class DeserializeTestCase(unittest.TestCase):
                 PlayerId(0): [PlayerId(1)],
                 PlayerId(1): [PlayerId(0)]
             },
-            win_points=WinPoints(
-                capture=10,
-                kill=10,
-            ),
+            win_points={
+                PlayerId(0): WinPoints(
+                    capture=10,
+                    kill=10,
+                ),
+                PlayerId(1): WinPoints(
+                    capture=0,
+                    kill=0,
+                )
+            },
             winner=None,
             catapult_usage=[
                 Hex(0, 0, 0), Hex(1, 1, -2)
@@ -150,8 +156,8 @@ class DeserializeTestCase(unittest.TestCase):
                 "1": [0]
             },
             "win_points": {
-                "capture": 10,
-                "kill": 10
+                "0": {"capture": 10, "kill": 10},
+                "1": {"capture": 0, "kill": 0}
             },
             "winner": None,
             "catapult_usage": [

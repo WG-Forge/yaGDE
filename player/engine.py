@@ -1,11 +1,13 @@
 from typing import *
+
 from client.responses import *
 from client.session import Session
 from player.player import *
-from AI_Logic.pathFinder import AStarPathfinding
-from AI_Logic.pathFinder import HexNode
+from ai.pathFinder import AStarPathfinding
+from model.hex import Hex as MapHex
 
-maxHp = 2 # TODO: hardcode like this should be escaped in future
+maxHp = 2  # TODO: hardcode like this should be escaped in future
+
 
 def handle_response(resp):
     match resp:
@@ -16,10 +18,17 @@ def handle_response(resp):
 
 
 class Bot(Player):
+    def __init__(self, s: Session, player_info: LoginResponse):
+        super().__init__(s, player_info)
+        self._pathFinder = AStarPathfinding()
+
     def __check_neutrality(self, game_actions: GameActionsResponse, target_vehicle: Vehicle):
-        shot_actions = [action for action in game_actions.actions if action.action_type == GameAction.SHOOT]
-        target_positions = [vehicle.position for vehicle in self._enemyVehicles.values() if target_vehicle.player_id == vehicle.player_id]
-        ally_positions = [vehicle.position for vehicle in self._allyVehicles.values()]
+        shot_actions = [
+            action for action in game_actions.actions if action.action_type == GameAction.SHOOT]
+        target_positions = [vehicle.position for vehicle in self._enemyVehicles.values(
+        ) if target_vehicle.player_id == vehicle.player_id]
+        ally_positions = [
+            vehicle.position for vehicle in self._allyVehicles.values()]
 
         # check if target attacked me
         for action in shot_actions:
@@ -35,11 +44,10 @@ class Bot(Player):
 
     def __is_enemy_in_range(self, game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle) -> bool:
         distance = map_distance(my_vehicle.position, enemy_vehicle.position)
-        if distance ==  2 and self.__check_neutrality(game_actions, enemy_vehicle):
+        if distance == 2 and self.__check_neutrality(game_actions, enemy_vehicle):
             return True
         return False
 
-    
     def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle) -> bool:
         # this will be used for neutrality check
         game_actions = self._session.game_actions()
@@ -54,14 +62,14 @@ class Bot(Player):
             Player.shoot_vehicle(self, my_vehicle_id, target)
             return True
         return False
-    
+
     def __collectExcludedNodes(self) -> List:
         res = []
         # Nodes of all vehicles should be excluded from pathFinder algorithm
         for vehicle_id, vehicle in self._enemyVehicles.items():
-            res.append(HexNode(vehicle.position.x, vehicle.position.y, vehicle.position.z))
+            res.append(MapHex(*vehicle.position))
         for vehicle_id, vehicle in self._allyVehicles.items():
-            res.append(HexNode(vehicle.position.x, vehicle.position.y, vehicle.position.z))
+            res.append(MapHex(*vehicle.position))
 
         # All obstacles should be excluded as well
         map_response = self._session.map()
@@ -69,20 +77,23 @@ class Bot(Player):
             for position in map_response.content[MapContent.OBSTACLE]:
                 res.append(position)
         return res
-    
+
     def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle) -> List:
         exclude = self.__collectExcludedNodes()
 
         # find next node to move
-        path = AStarPathfinding.FindPath(HexNode(vehicle.position.x, vehicle.position.y, vehicle.position.z), HexNode(0, 0, 0), exclude)
-        nextMovement = HexNode(0, 0, 0)
+        path = self._pathFinder.path(
+            MapHex(*vehicle.position),
+            MapHex(0, 0, 0),
+            exclude)
+        moveHex = Hex(0, 0, 0)
         if len(path) >= 2:
-            nextMovement = path[1]
+            moveHex = Hex(*path[1])
         elif len(path) >= 1:
-            nextMovement = path[0]
-        moveHex = Hex(nextMovement.x, nextMovement.y, nextMovement.z)
+            moveHex = Hex(*path[0])
         self.move_vehicle(vehicle_id, moveHex)
-        self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(position=Hex(nextMovement.x, nextMovement.y, nextMovement.z))
+        self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(
+            position=moveHex)
 
     def bot_engine(self):
         while True:
@@ -95,11 +106,12 @@ class Bot(Player):
             if game_state.current_player_idx != self._playerInfo.idx:
                 continue
 
-            Player.update_vehicles(self, Player._collect_vehicles(self, game_state))
+            Player.update_vehicles(
+                self, Player._collect_vehicles(self, game_state))
 
             if game_state.current_turn == game_state.num_turns:
                 break
-            
+
             # move each one of vehicles
             for vehicle_id, vehicle in self._allyVehicles.items():
                 # try to shot
