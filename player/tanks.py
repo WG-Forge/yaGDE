@@ -14,6 +14,8 @@ def check_range(game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_ve
         return Light.is_enemy_in_range(game_actions,my_vehicle, enemy_vehicle)
     elif my_vehicle.vehicle_type == VehicleType.SPG:
         return SPG.is_enemy_in_range(game_actions,my_vehicle, enemy_vehicle)
+    elif my_vehicle.vehicle_type == VehicleType.AT_SPG:
+        return AT_SPG.is_enemy_in_range(game_actions,my_vehicle, enemy_vehicle)
     return False
 
 
@@ -76,6 +78,29 @@ class SPG:
     def is_enemy_in_range(game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle):
         distance = map_distance(my_vehicle.position, enemy_vehicle.position)
         if distance == 3:
+            return True
+        return False
+    
+    @staticmethod
+    def move(path: list) -> Hex:
+        moveHex = Hex(0, 0, 0)
+        if len(path) >= 2:
+            moveHex = Hex(*path[1])
+        return moveHex
+    
+
+class AT_SPG:
+    @staticmethod
+    def __two_out_of_three(my_position: Hex, enemy_position: Hex):
+        return (my_position.x == enemy_position.x and my_position.y != enemy_position.y and my_position.z != enemy_position.z) or\
+                (my_position.x != enemy_position.x and my_position.y == enemy_position.y and my_position.z != enemy_position.z) or\
+                (my_position.x != enemy_position.x and my_position.y != enemy_position.y and my_position.z == enemy_position.z)
+
+    @staticmethod
+    def is_enemy_in_range(game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle):
+        # TODO: maybe better algorithm can be used in future
+        distance = map_distance(my_vehicle.position, enemy_vehicle.position)
+        if distance <= 3 and AT_SPG.__two_out_of_three(my_vehicle.position, enemy_vehicle.position):
             return True
         return False
     

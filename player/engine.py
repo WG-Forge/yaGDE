@@ -98,6 +98,8 @@ class Bot(Player):
             moveHex = Heavy.move(path)
         elif vehicle.vehicle_type == VehicleType.MEDIUM_TANK:
             moveHex = Medium.move(path)
+        elif vehicle.vehicle_type == VehicleType.AT_SPG:
+            moveHex = AT_SPG.move(path)
 
         self.move_vehicle(vehicle_id, moveHex)
         self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(
