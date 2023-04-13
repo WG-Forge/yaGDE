@@ -6,6 +6,8 @@ from client.responses import *
 from player.player import Player
 from player.engine import Bot
 from model.hex import *
+from model.map import Map
+from graphics.window import Window
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
@@ -21,6 +23,12 @@ def handle_response(resp):
 
 
 if __name__ == "__main__":
+    window = Window(1080, 1080, "YAGDE")
+
+    while True:
+        window.draw(Map(10))
+        window.update()
+
     with Session("wgforge-srv.wargaming.net", 443) as s:
         player_info = s.login(LoginAction("yagde-test-user1"))
         player_bot = Bot(s, player_info)
