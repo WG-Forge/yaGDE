@@ -6,7 +6,11 @@ from player.player import *
 from ai.pathFinder import AStarPathfinding
 from model.hex import Hex as MapHex
 
-maxHp = 2  # TODO: hardcode like this should be escaped in future
+
+from player.tanks import *
+
+
+maxHp = 3
 
 
 def handle_response(resp):
@@ -42,20 +46,11 @@ class Bot(Player):
         # if he wasn't attacked just attack
         return True
 
-    def __is_enemy_in_range(self, game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle) -> bool:
-        distance = map_distance(my_vehicle.position, enemy_vehicle.position)
-        if distance == 2 and self.__check_neutrality(game_actions, enemy_vehicle):
-            return True
-        return False
-
-    def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle) -> bool:
-        # this will be used for neutrality check
-        game_actions = self._session.game_actions()
-
+    def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle, game_actions: ActionResponse) -> bool:
         target = None
         minHp = maxHp
         for vehicle_id, vehicle in self._enemyVehicles.items():
-            if self.__is_enemy_in_range(game_actions, my_vehicle, vehicle) and minHp >= vehicle.health:
+            if self.__check_neutrality(game_actions, vehicle) and check_range(game_actions, my_vehicle, vehicle) and minHp >= vehicle.health:
                 minHp = vehicle.health
                 target = vehicle
         if target is not None:
@@ -63,23 +58,24 @@ class Bot(Player):
             return True
         return False
 
-    def __collectExcludedNodes(self) -> List:
+    def __collectExcludedNodes(self, my_vehicle_id : VehicleId, map: MapResponse) -> List:
         res = []
         # Nodes of all vehicles should be excluded from pathFinder algorithm
         for vehicle_id, vehicle in self._enemyVehicles.items():
             res.append(MapHex(*vehicle.position))
         for vehicle_id, vehicle in self._allyVehicles.items():
+            if vehicle_id == my_vehicle_id:
+                continue
             res.append(MapHex(*vehicle.position))
 
         # All obstacles should be excluded as well
-        map_response = self._session.map()
-        if MapContent.OBSTACLE in map_response.content:
-            for position in map_response.content[MapContent.OBSTACLE]:
-                res.append(position)
+        if MapContent.OBSTACLE in map.content:
+            for position in map.content[MapContent.OBSTACLE]:
+                res.append(MapHex(*position))
         return res
 
-    def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle) -> List:
-        exclude = self.__collectExcludedNodes()
+    def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle, map: MapResponse) -> List:
+        exclude = self.__collectExcludedNodes(vehicle_id, map)
 
         # find next node to move
         path = self._pathFinder.path(
@@ -87,18 +83,34 @@ class Bot(Player):
             MapHex(0, 0, 0),
             exclude)
         moveHex = Hex(0, 0, 0)
-        if len(path) >= 2:
-            moveHex = Hex(*path[1])
-        elif len(path) >= 1:
-            moveHex = Hex(*path[0])
+        if vehicle.vehicle_type == VehicleType.SPG:
+            moveHex = SPG.move(path)
+        elif vehicle.vehicle_type == VehicleType.LIGHT_TANK:
+            moveHex = Light.move(path)
+        elif vehicle.vehicle_type == VehicleType.HEAVY_TANK:
+            moveHex = Heavy.move(path)
+        elif vehicle.vehicle_type == VehicleType.MEDIUM_TANK:
+            moveHex = Medium.move(path)
+        elif vehicle.vehicle_type == VehicleType.AT_SPG:
+            moveHex = AT_SPG.move(path)
+
         self.move_vehicle(vehicle_id, moveHex)
         self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(
             position=moveHex)
 
+    def __vehicle_action(self, vehicles, map: MapResponse, game_actions: ActionResponse):
+        # try to shot
+        for vehicle_id, vehicle in vehicles.items():
+            shooted = self._shoot_with_vehicle(vehicle_id, vehicle, game_actions)
+
+            # now move to the center if didn't shot
+            if shooted == False:
+                self.__execute_movement(vehicle_id, vehicle, map)
+
+
     def bot_engine(self):
         while True:
             game_state = handle_response(self._session.game_state())
-            # TODO: should be done...
             if game_state.winner is not None:
                 print("Someone won.")
                 break
@@ -112,13 +124,20 @@ class Bot(Player):
             if game_state.current_turn == game_state.num_turns:
                 break
 
-            # move each one of vehicles
-            for vehicle_id, vehicle in self._allyVehicles.items():
-                # try to shot
-                shooted = self._shoot_with_vehicle(vehicle_id, vehicle)
+            map_response = self._session.map()
+            game_actions_response = self._session.game_actions()
 
-                # now move to the center if didn't shot
-                if shooted == False:
-                    self.__execute_movement(vehicle_id, vehicle)
+            spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.SPG}
+            light = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.LIGHT_TANK}
+            heavy = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.HEAVY_TANK}
+            medium = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.MEDIUM_TANK}
+            at_spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.AT_SPG}
+
+            # move each one of vehicles
+            self.__vehicle_action(spg, map_response, game_actions_response)
+            self.__vehicle_action(light, map_response, game_actions_response)
+            self.__vehicle_action(heavy, map_response, game_actions_response)
+            self.__vehicle_action(medium, map_response, game_actions_response)
+            self.__vehicle_action(at_spg, map_response, game_actions_response)
 
             handle_response(self._session.turn())
