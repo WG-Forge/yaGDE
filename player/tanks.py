@@ -91,16 +91,12 @@ class SPG:
 
 class AT_SPG:
     @staticmethod
-    def __two_out_of_three(my_position: Hex, enemy_position: Hex):
-        return (my_position.x == enemy_position.x and my_position.y != enemy_position.y and my_position.z != enemy_position.z) or\
-                (my_position.x != enemy_position.x and my_position.y == enemy_position.y and my_position.z != enemy_position.z) or\
-                (my_position.x != enemy_position.x and my_position.y != enemy_position.y and my_position.z == enemy_position.z)
-
-    @staticmethod
     def is_enemy_in_range(game_actions: GameActionsResponse, my_vehicle: Vehicle, enemy_vehicle: Vehicle):
         # TODO: maybe better algorithm can be used in future
         distance = map_distance(my_vehicle.position, enemy_vehicle.position)
-        if distance <= 3 and AT_SPG.__two_out_of_three(my_vehicle.position, enemy_vehicle.position):
+        my_position = my_vehicle.position
+        enemy_position = enemy_vehicle.position
+        if distance <= 3 and (my_position.x == enemy_position.x or my_position.y == enemy_position.y or my_position.z == enemy_position.z):
             return True
         return False
     
