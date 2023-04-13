@@ -35,6 +35,25 @@ if __name__ == "__main__":
            if game_status.num_players >= 2:
                not_all_connected = False
         """
-        player_bot.bot_engine()
+
+        while True:
+            game_state = handle_response(s.game_state())
+            if game_state.winner is not None:
+                print("Someone won.")
+                break
+
+            if game_state.current_player_idx != player_info.idx:
+                continue
+
+            player_bot.update_vehicles(
+                player_bot.collect_vehicles(game_state))
+
+            if game_state.current_turn == game_state.num_turns:
+                break
+
+            map_response = s.map()
+            game_actions_response = s.game_actions()
+
+            player_bot.bot_engine(game_state, map_response, game_actions_response)
 
         handle_response(s.logout())

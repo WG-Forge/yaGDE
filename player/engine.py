@@ -108,36 +108,18 @@ class Bot(Player):
                 self.__execute_movement(vehicle_id, vehicle, map)
 
 
-    def bot_engine(self):
-        while True:
-            game_state = handle_response(self._session.game_state())
-            if game_state.winner is not None:
-                print("Someone won.")
-                break
+    def bot_engine(self, game_state: GameStateResponse, map_response: MapResponse, game_actions_response: GameActionsResponse):
+        spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.SPG}
+        light = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.LIGHT_TANK}
+        heavy = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.HEAVY_TANK}
+        medium = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.MEDIUM_TANK}
+        at_spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.AT_SPG}
 
-            if game_state.current_player_idx != self._playerInfo.idx:
-                continue
+        # move each one of vehicles
+        self.__vehicle_action(spg, map_response, game_actions_response)
+        self.__vehicle_action(light, map_response, game_actions_response)
+        self.__vehicle_action(heavy, map_response, game_actions_response)
+        self.__vehicle_action(medium, map_response, game_actions_response)
+        self.__vehicle_action(at_spg, map_response, game_actions_response)
 
-            Player.update_vehicles(
-                self, Player._collect_vehicles(self, game_state))
-
-            if game_state.current_turn == game_state.num_turns:
-                break
-
-            map_response = self._session.map()
-            game_actions_response = self._session.game_actions()
-
-            spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.SPG}
-            light = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.LIGHT_TANK}
-            heavy = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.HEAVY_TANK}
-            medium = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.MEDIUM_TANK}
-            at_spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items() if vehicle.vehicle_type == VehicleType.AT_SPG}
-
-            # move each one of vehicles
-            self.__vehicle_action(spg, map_response, game_actions_response)
-            self.__vehicle_action(light, map_response, game_actions_response)
-            self.__vehicle_action(heavy, map_response, game_actions_response)
-            self.__vehicle_action(medium, map_response, game_actions_response)
-            self.__vehicle_action(at_spg, map_response, game_actions_response)
-
-            handle_response(self._session.turn())
+        handle_response(self._session.turn())
