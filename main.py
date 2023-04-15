@@ -23,11 +23,7 @@ def handle_response(resp):
 
 
 if __name__ == "__main__":
-    # window = Window(1080, 1080, "YAGDE")
-
-    # while True:
-    #     window.draw(GameMap(10))
-    #     window.update()
+    window = Window(1080, 1080, "YAGDE")
 
     with Session("wgforge-srv.wargaming.net", 443) as s:
         player_info = s.login(LoginAction("yagde-test-user1"))
@@ -53,6 +49,9 @@ if __name__ == "__main__":
                 break
 
             game_map.update_vehicles_from_state_response(game_state)
+
+            window.draw(game_map)
+            window.update()
 
             if game_state.current_player_idx != player_info.idx:
                 continue
