@@ -19,7 +19,7 @@ class Player:
         self._allyVehicles = {}
         self._enemyVehicles = {}
 
-    def _collect_vehicles(self, response: GameStateResponse) -> Vehicles:
+    def collect_vehicles(self, response: GameStateResponse) -> Vehicles:
         return response.vehicles
 
     def update_vehicles(self, vehicles: Vehicles):
