@@ -3,7 +3,7 @@ from math import *
 from pygame.math import Vector2
 
 from model.hex import *
-from model.map import Map
+from model.map import GameMap
 
 
 def hex_size(width: int, height: int, map_size: int) -> float:
@@ -59,7 +59,7 @@ class Window:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(self.title)
 
-    def draw(self, game_map: Map):
+    def draw(self, game_map: GameMap):
         size = hex_size(self.width * 3 // 4,
                         self.height * 3 // 4,
                         game_map.size)

@@ -1,6 +1,8 @@
 from typing import *
 from itertools import permutations
 
+from client.common import Hex as ResponseHex
+
 
 class Hex(NamedTuple):
     q: int
@@ -36,8 +38,12 @@ class Hex(NamedTuple):
         #
         # <param name="args">Range to return hexes in.</param>
 
-        for diff in hexex_range(*args):
+        for diff in hexes_range(*args):
             yield self + diff
+
+    @staticmethod
+    def from_hex_response(hex: ResponseHex):
+        return Hex(*hex)
 
 
 def hexes_at(dist: int = 0):

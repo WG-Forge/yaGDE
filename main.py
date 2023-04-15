@@ -6,7 +6,7 @@ from client.responses import *
 from player.player import Player
 from player.engine import Bot
 from model.hex import *
-from model.map import Map
+from model.map import GameMap
 from graphics.window import Window
 
 logging.basicConfig(
@@ -23,16 +23,18 @@ def handle_response(resp):
 
 
 if __name__ == "__main__":
-    window = Window(1080, 1080, "YAGDE")
+    # window = Window(1080, 1080, "YAGDE")
 
-    while True:
-        window.draw(Map(10))
-        window.update()
+    # while True:
+    #     window.draw(GameMap(10))
+    #     window.update()
 
     with Session("wgforge-srv.wargaming.net", 443) as s:
         player_info = s.login(LoginAction("yagde-test-user1"))
         player_bot = Bot(s, player_info)
         handle_response(player_info)
+
+        game_map = GameMap.from_map_response(handle_response(s.map()))
 
         # busy wait for second player to join
         not_all_connected = True
@@ -50,6 +52,8 @@ if __name__ == "__main__":
                 print("Someone won.")
                 break
 
+            game_map.update_vehicles_from_state_response(game_state)
+
             if game_state.current_player_idx != player_info.idx:
                 continue
 
@@ -62,6 +66,7 @@ if __name__ == "__main__":
             map_response = s.map()
             game_actions_response = s.game_actions()
 
-            player_bot.bot_engine(game_state, map_response, game_actions_response)
+            player_bot.bot_engine(
+                game_state, map_response, game_actions_response)
 
         handle_response(s.logout())
