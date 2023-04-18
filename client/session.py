@@ -119,12 +119,14 @@ class Session:
         data = self._recvall(l)
         match c:
             case ResponseCode.OKEY:
+                log.debug(f"Received response data: {data}")
                 response = deserialize_response_data(t, data)
-                log.debug(f"Received response: {response}")
+                log.debug(f"Deserialized response: {response}")
                 return response
             case _:
+                log.debug(f"Received response data: {data}")
                 response = deserialize_error_response(c, data)
-                log.error(f"Received error response: {response}")
+                log.debug(f"Deserialized response: {response}")
                 return response
 
     def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:
