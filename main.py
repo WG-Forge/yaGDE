@@ -18,12 +18,13 @@ logging.basicConfig(
 
 
 class TasksGroup:
+    # This is a hack to make turns work because they are blocking
+
     def __init__(self):
         self._tasks = []
 
     def add(self, task, args):
-        self._tasks.append(
-            Thread(target=task, args=args))
+        self._tasks.append(Thread(target=task, args=args))
         self._tasks[-1].start()
 
     def join(self):
@@ -79,6 +80,7 @@ if __name__ == "__main__":
 
             turns = TasksGroup()
 
+            # Make current player turn
             for bot, session in players:
                 if bot._playerInfo.idx != game_state.current_player_idx:
                     continue
@@ -98,6 +100,7 @@ if __name__ == "__main__":
                 turns.add(task=lambda s: handle_response(s.turn()),
                           args=(session,))
 
+            # Make other players turns
             for bot, session in players:
                 if bot._playerInfo.idx == game_state.current_player_idx:
                     continue
@@ -107,13 +110,16 @@ if __name__ == "__main__":
                 turns.add(task=lambda s: handle_response(s.turn()),
                           args=(session,))
 
+            # Make observer turn
             logging.info(f"Observer turn: {observer_info.idx}")
             handle_response(observer_session.turn())
 
             turns.join()
 
+            # Update game state
             game_state = handle_response(observer_session.game_state())
 
-            time.sleep(1)
+            # Wait for a while
+            time.sleep(0.5)
 
         logging.info(f"Winner: {game_state.winner}")
