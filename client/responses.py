@@ -49,7 +49,8 @@ class Vehicle(NamedTuple):
             spawn_position=Hex.from_json(j['spawn_position']),
             position=Hex.from_json(j['position']),
             capture_points=int(j['capture_points']),
-            shoot_range_bonus=int(j['shoot_range_bonus']) if 'shoot_range_bonus' in j else -1,
+            shoot_range_bonus=int(j['shoot_range_bonus']
+                                  ) if 'shoot_range_bonus' in j else -1,
         )
 
 
@@ -122,8 +123,8 @@ class GameStateResponse(NamedTuple):
     num_turns: int
     current_turn: int
     players: List[PlayerState]
-    observers: List[PlayerId]
-    current_player_idx: PlayerId
+    observers: List[PlayerState]
+    current_player_idx: Optional[PlayerId]
     finished: bool
     vehicles: Dict[VehicleId, Vehicle]
     attack_matrix: Dict[PlayerId, List[PlayerId]]  # don't know exact type
@@ -138,8 +139,10 @@ class GameStateResponse(NamedTuple):
             num_turns=int(j['num_turns']),
             current_turn=int(j['current_turn']),
             players=[PlayerState.from_json(p) for p in j['players']],
-            observers=[PlayerId.from_json(o) for o in j['observers']],
-            current_player_idx=PlayerId.from_json(j['current_player_idx']),
+            observers=[PlayerState.from_json(o) for o in j['observers']],
+            current_player_idx=PlayerId.from_json(j['current_player_idx'])
+            if 'current_player_idx' in j and j['current_player_idx']
+            else None,
             finished=bool(j['finished']),
             vehicles={
                 VehicleId.from_json(k): Vehicle.from_json(v)
@@ -151,8 +154,11 @@ class GameStateResponse(NamedTuple):
             },
             win_points={PlayerId.from_json(k): WinPoints.from_json(v)
                         for k, v in j['win_points'].items()},
-            winner=PlayerId.from_json(j['winner']) if j['winner'] else None,
-            catapult_usage=[Hex.from_json(h) for h in j['catapult_usage']] if 'catapult_usage' in j else [],
+            winner=PlayerId.from_json(j['winner'])
+            if 'winner' in j and j['winner']
+            else None,
+            catapult_usage=[Hex.from_json(
+                h) for h in j['catapult_usage']] if 'catapult_usage' in j else [],
         )
 
 
