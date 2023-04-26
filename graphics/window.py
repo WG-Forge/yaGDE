@@ -10,51 +10,6 @@ from model.vehicle import *
 from graphics.utils import *
 
 
-def hex_size(width: int, height: int, map_size: int) -> float:
-    # Calculates the size of a hexagon to fit the given screen exactly.
-    #
-    # <param name="width">Width of the screen.</param>
-    # <param name="height">Height of the screen.</param>
-    # <param name="map_size">Size of the map.</param>
-    # Note: flat top orientation is assumed
-
-    return min(
-        width / (3 * map_size + 2),
-        height / (2 * map_size + 1) / sqrt(3)
-    )
-
-
-def hex_center(hex: Hex, size: float) -> Vector2:
-    # Calculates the center of the given hexagon with the given size of hex.
-    #
-    # <param name="hex">Hexagon to calculate the center of.</param>
-    # <param name="size">Size of a hexagon.</param>
-
-    e = Vector2(3 / 2, 0)
-    f = Vector2(sqrt(3) / 2, sqrt(3))
-    coords = Vector2(hex.q, hex.r)
-
-    return Vector2(e.dot(coords), f.dot(coords)) * size
-
-
-def regular_polygon_corners(sides: int, size: float = 1, angle: float = 0) -> list:
-    # Calculates corners of a regular polygon with the given size.
-
-    angle_diff = 2 * pi / sides
-
-    return [
-        size * Vector2(cos(angle + angle_diff * i),
-                       sin(angle + angle_diff * i))
-        for i in range(sides)
-    ]
-
-
-def hex_corners(size: float, angle: float = 0) -> list:
-    # Calculates corners of a hexagon with the given size.
-
-    return regular_polygon_corners(6, size, angle)
-
-
 class HexSurface:
     # Surface of a single hexagon.
 
@@ -65,6 +20,8 @@ class HexSurface:
 
         self.surface = surface
         self.size = size
+        self.width = size * 2
+        self.height = size * sqrt(3)
 
     def draw_hex(self, color, width=0):
         # Draws a hexagon with the given color and width.
@@ -85,6 +42,18 @@ class HexSurface:
         corners = regular_polygon_corners(sides, self.size * factor, angle)
 
         return [center + point for point in corners]
+
+    def draw_hbar(self, color, vfactor, hfactor, vshift=0, hshift=0):
+        center_x, center_y = self.surface.get_rect().center
+        width = self.width * hfactor
+        height = self.height * vfactor
+        vshift = self.height * vshift / 2
+        hshift = self.width * hshift / 2
+        rect = pygame.Rect(center_x - width / 2 + hshift,
+                           center_y - height / 2 + vshift,
+                           width, height)
+
+        pygame.draw.rect(self.surface, color, rect)
 
     def draw_regular_polygon(self, color, sides, width=0, factor=1, angle=0):
         # Draws a regular polygon with the given color and width.
@@ -151,7 +120,7 @@ class VehicleDraw:
         self.surf = surf
         self.vehicle = vehicle
 
-    def draw(self):
+    def __draw_symbol(self):
         # TODO: Pick color by player id
         color = (255, 0, 0)
         factor = 0.6
@@ -170,6 +139,28 @@ class VehicleDraw:
                     color, 3, factor=factor, angle=-pi/6)
             case _:
                 raise ValueError("Unknown vehicle type")
+
+    def __draw_hp(self):
+        green = (0, 255, 0)
+        red = (255, 0, 0)
+        black = (0, 0, 0)
+
+        hfactor = 0.5
+        vfactor = 0.15
+        vshift = 0.6
+        vscale = 0.6
+        hscale = 0.9
+
+        scale = self.vehicle.hp / self.vehicle.max_hp
+
+        self.surf.draw_hbar(black, vfactor, hfactor, vshift)
+        self.surf.draw_hbar(red, vfactor * vscale, hfactor * hscale, vshift)
+        self.surf.draw_hbar(green, vfactor * vscale, hfactor * hscale * scale, vshift,
+                            hshift=(1 - scale) * hfactor)
+
+    def draw(self):
+        self.__draw_symbol()
+        self.__draw_hp()
 
 
 class Window:
