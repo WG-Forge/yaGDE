@@ -35,6 +35,13 @@ class GameMap:
             for vid, vehicle in state_response.vehicles.items()
         }
 
+    def get_spawn_points(self) -> List[Hex]:
+        # Get spawn points
+        #
+        # <returns>List of spawn points</returns>
+
+        return [vehicle.spawn for vehicle in self.vehicles.values()]
+
     def at(self, hex: Hex) -> Content | Vehicle | None:
         # Get content or vehicle at hex
         #
@@ -45,6 +52,19 @@ class GameMap:
             return self.vehicles[hex]
         if hex in self.content:
             return self.content[hex]
+        return None
+
+    def vehicle_by(self, id: VehicleId) -> Vehicle | None:
+        # Get vehicle by id
+        #
+        # <param name="id">Vehicle id</param>
+        # <returns>Vehicle with id or None if there is none</returns>
+
+        # TODO: This is O(n) and should be O(1)
+        for vehicle in self.vehicles.values():
+            if vehicle.id == id:
+                return vehicle
+
         return None
 
     def __repr__(self):

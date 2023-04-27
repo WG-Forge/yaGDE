@@ -5,54 +5,10 @@ from pygame.surface import Surface
 
 from model.hex import *
 from model.map import *
+from model.game import *
 from model.common import *
 from model.vehicle import *
 from graphics.utils import *
-
-
-def hex_size(width: int, height: int, map_size: int) -> float:
-    # Calculates the size of a hexagon to fit the given screen exactly.
-    #
-    # <param name="width">Width of the screen.</param>
-    # <param name="height">Height of the screen.</param>
-    # <param name="map_size">Size of the map.</param>
-    # Note: flat top orientation is assumed
-
-    return min(
-        width / (3 * map_size + 2),
-        height / (2 * map_size + 1) / sqrt(3)
-    )
-
-
-def hex_center(hex: Hex, size: float) -> Vector2:
-    # Calculates the center of the given hexagon with the given size of hex.
-    #
-    # <param name="hex">Hexagon to calculate the center of.</param>
-    # <param name="size">Size of a hexagon.</param>
-
-    e = Vector2(3 / 2, 0)
-    f = Vector2(sqrt(3) / 2, sqrt(3))
-    coords = Vector2(hex.q, hex.r)
-
-    return Vector2(e.dot(coords), f.dot(coords)) * size
-
-
-def regular_polygon_corners(sides: int, size: float = 1, angle: float = 0) -> list:
-    # Calculates corners of a regular polygon with the given size.
-
-    angle_diff = 2 * pi / sides
-
-    return [
-        size * Vector2(cos(angle + angle_diff * i),
-                       sin(angle + angle_diff * i))
-        for i in range(sides)
-    ]
-
-
-def hex_corners(size: float, angle: float = 0) -> list:
-    # Calculates corners of a hexagon with the given size.
-
-    return regular_polygon_corners(6, size, angle)
 
 
 class HexSurface:
@@ -65,6 +21,8 @@ class HexSurface:
 
         self.surface = surface
         self.size = size
+        self.width = size * 2
+        self.height = size * sqrt(3)
 
     def draw_hex(self, color, width=0):
         # Draws a hexagon with the given color and width.
@@ -85,6 +43,18 @@ class HexSurface:
         corners = regular_polygon_corners(sides, self.size * factor, angle)
 
         return [center + point for point in corners]
+
+    def draw_hbar(self, color, vfactor, hfactor, vshift=0, hshift=0):
+        center_x, center_y = self.surface.get_rect().center
+        width = self.width * hfactor
+        height = self.height * vfactor
+        vshift = self.height * vshift / 2
+        hshift = self.width * hshift / 2
+        rect = pygame.Rect(center_x - width / 2 + hshift,
+                           center_y - height / 2 + vshift,
+                           width, height)
+
+        pygame.draw.rect(self.surface, color, rect)
 
     def draw_regular_polygon(self, color, sides, width=0, factor=1, angle=0):
         # Draws a regular polygon with the given color and width.
@@ -118,7 +88,7 @@ class HexSurface:
 
 
 CONTENT_COLORS = {
-    Content.BASE: (0, 255, 0, 128),
+    Content.BASE: (0, 255, 0, 16),
     Content.OBSTACLE: (0, 0, 0),
     Content.LIGHT_REPAIR: (128, 255, 0, 128),
     Content.HARD_REPAIR: (255, 128, 0, 128),
@@ -144,32 +114,76 @@ class ContentDraw:
 class VehicleDraw:
     # Draws a vehicle on a hexagon.
 
-    def __init__(self, surf: HexSurface, vehicle: Vehicle):
+    def __init__(self, surf: HexSurface, vehicle: Vehicle, color):
         # <param name="surf">Hex Surface to draw on.</param>
         # <param name="vehicle">Vehicle to draw.</param>
 
         self.surf = surf
         self.vehicle = vehicle
+        self.color = color
 
-    def draw(self):
-        # TODO: Pick color by player id
-        color = (255, 0, 0)
+    def __draw_symbol(self):
         factor = 0.6
         match self.vehicle.type:
             case VehicleType.LIGHT_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=0)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=0)
             case VehicleType.MEDIUM_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=1)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=1)
             case VehicleType.HEAVY_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=2)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=2)
             case VehicleType.SPG:
                 self.surf.draw_regular_polygon(
-                    color, 4, factor=factor, angle=-pi/4)
+                    self.color, 4, factor=factor, angle=-pi/4)
             case VehicleType.AT_SPG:
                 self.surf.draw_regular_polygon(
-                    color, 3, factor=factor, angle=-pi/6)
+                    self.color, 3, factor=factor, angle=-pi/6)
             case _:
                 raise ValueError("Unknown vehicle type")
+
+    def __draw_hp(self):
+        green = (0, 255, 0)
+        red = (255, 0, 0)
+        black = (0, 0, 0)
+
+        hfactor = 0.5
+        vfactor = 0.15
+        vshift = 0.6
+        vscale = 0.6
+        hscale = 0.9
+
+        scale = self.vehicle.hp / self.vehicle.max_hp
+
+        self.surf.draw_hbar(black, vfactor, hfactor, vshift)
+        self.surf.draw_hbar(red, vfactor * vscale, hfactor * hscale, vshift)
+        self.surf.draw_hbar(green, vfactor * vscale, hfactor * hscale * scale, vshift,
+                            hshift=(1 - scale) * hfactor)
+
+    def draw(self):
+        self.__draw_symbol()
+        self.__draw_hp()
+
+
+PLAYERS_COLORS = [
+    (128, 0, 32),
+    (255, 128, 0),
+    (0, 128, 128),
+    (128, 0, 128),
+    (64, 0, 128)
+]
+
+SPAWN_COLOR = (255, 128, 64, 128)
+
+GRID_COLOR = (0, 0, 0)
+GRID_WIDTH = 5
+
+MOVE_COLOR = (64, 64, 255, 200)
+SHOOT_COLOR = (255, 0, 0, 200)
+ARROW_WIDTH = 15
+
+DRAW_SURFACE_SIZE = 3840
 
 
 class Window:
@@ -184,35 +198,76 @@ class Window:
         self.height = height
         self.title = title
         self.screen = pygame.display.set_mode((self.width, self.height))
+        self.surface = pygame.Surface((DRAW_SURFACE_SIZE, DRAW_SURFACE_SIZE),
+                                      pygame.SRCALPHA)
         self.hex_size = None
 
         pygame.display.set_caption(self.title)
 
-    def draw(self, game_map: GameMap):
+    def draw(self, game: Game):
         # Draws the game map on the window.
         #
-        # <param name="game_map">Game map to draw.</param>
+        # <param name="game">Game to draw.</param>
 
-        self.hex_size = hex_size(self.width * 4 // 5,
-                                 self.height * 4 // 5,
+        game_map = game.map
+        players_colors = dict(
+            # Sort players to insure stable color picking
+            zip(sorted(game.players), PLAYERS_COLORS)
+        )
+        actions = game.actions
+
+        self.hex_size = hex_size(self.surface.get_width() // 5 * 4,
+                                 self.surface.get_height() // 5 * 5,
                                  game_map.size)
 
-        self.screen.fill((255, 255, 255))
+        self.surface.fill((255, 255, 255))
 
         # Draw contents
         for hex, content in game_map.contents.items():
-            surf = self.__hex_subsurface(hex, self.hex_size)
+            surf = self.__hex_subsurface(hex)
             draw = ContentDraw(surf, content)
             draw.draw()
 
-        # Draw vehicles
-        for hex, vehicle in game_map.vehicles.items():
-            surf = self.__hex_subsurface(hex, self.hex_size)
-            draw = VehicleDraw(surf, vehicle)
-            draw.draw()
+        # Draw spawns
+        for hex in game_map.get_spawn_points():
+            surf = self.__hex_subsurface(hex)
+            surf.draw_hex(SPAWN_COLOR, 0)
 
         # Draw grid
         self.__draw_grid(game_map.size)
+
+        # Draw vehicles
+        for hex, vehicle in game_map.vehicles.items():
+            surf = self.__hex_subsurface(hex)
+            draw = VehicleDraw(
+                surf, vehicle, players_colors[vehicle.playerId])
+            draw.draw()
+
+        # Draw moves
+        for move in actions.moves:
+            vehicle = game_map.vehicle_by(move.vehicleId)
+            self.__draw_arrow(vehicle.position, move.target, MOVE_COLOR)
+
+        # Draw shoots
+        for shoot in actions.shoots:
+            vehicle = game_map.vehicle_by(shoot.vehicleId)
+            self.__draw_arrow(vehicle.position, shoot.target, SHOOT_COLOR)
+
+        self.__flush()
+
+    def __flush(self):
+        screen_rect = self.screen.get_rect()
+        result_rect = self.surface.get_rect(center=screen_rect.center)
+
+        scale = min(screen_rect.width / result_rect.width,
+                    screen_rect.height / result_rect.height)
+        result_rect.scale_by_ip(scale)
+        result = pygame.transform.smoothscale_by(
+            pygame.transform.flip(self.surface, True, False),
+            scale)
+
+        self.screen.fill((255, 255, 255))
+        self.screen.blit(result, result_rect)
 
     def update(self):
         # Updates the window.
@@ -220,44 +275,61 @@ class Window:
 
         pygame.display.update()
 
-    def __hex_center(self, hex: Hex, size: float) -> Vector2:
+    def __hex_center(self, hex: Hex) -> Vector2:
         # Calculates the center of a hexagon.
         #
         # <param name="hex">Hexagon to calculate the center of.</param>
-        # <param name="size">Size of the hexagon.</param>
 
-        return hex_center(hex, size) + Vector2(self.width / 2, self.height / 2)
+        return hex_center(hex, self.hex_size) + Vector2(self.surface.get_width(), self.surface.get_height()) / 2
 
-    def __hex_subsurface(self, hex: Hex, size: float) -> HexSurface:
+    def __hex_subsurface(self, hex: Hex) -> HexSurface:
         # Creates a subsurface for a hexagon.
         #
         # <param name="hex">Hexagon to create the subsurface for.</param>
         # <param name="size">Size of the hexagon.</param>
 
-        center = self.__hex_center(hex, size)
-        width = size * 2
-        height = size * sqrt(3)
+        center = self.__hex_center(hex)
+
+        width = self.hex_size * 2
+        height = self.hex_size * sqrt(3)
 
         # Here we add some extra space to the surface to
         # make sure that the hexagon is fully visible.
         delta = 25
-        surface = self.screen.subsurface(
+        surface = self.surface.subsurface(
             center.x - width / 2 - delta,
             center.y - height / 2 - delta,
             width + 2 * delta,
             height + 2 * delta
         )
 
-        return HexSurface(surface, size)
+        return HexSurface(surface, self.hex_size)
 
     def __draw_grid(self, map_size: int):
         # Draws the grid on the window.
         #
         # <param name="map_size">Size of the map.</param>
 
-        color = (0, 0, 0)
-        width = 5
-
         for hex in hexes_range(map_size):
-            surf = self.__hex_subsurface(hex, self.hex_size)
-            surf.draw_hex(color, width)
+            surf = self.__hex_subsurface(hex)
+            surf.draw_hex(GRID_COLOR, GRID_WIDTH)
+
+    def __draw_arrow(self, start: Hex, end: Hex, color):
+        # Draws an arrow from one hex to another.
+        #
+        # <param name="start">Hex to draw the arrow from.</param>
+        # <param name="end">Hex to draw the arrow to.</param>
+
+        angle = pi / 4
+
+        back = self.__hex_center(start)
+        point = self.__hex_center(end)
+        basis = (back - point).normalize() * self.hex_size * 0.5
+        right = basis.rotate_rad(angle) + point
+        left = basis.rotate_rad(-angle) + point
+
+        pygame.draw.circle(self.surface, color, back, ARROW_WIDTH, 0)
+        pygame.draw.line(self.surface, color,
+                         back, point + basis * cos(angle) / 2,
+                         ARROW_WIDTH)
+        pygame.draw.polygon(self.surface, color, [right, left, point])

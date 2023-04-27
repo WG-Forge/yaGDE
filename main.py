@@ -5,16 +5,19 @@ from threading import Thread
 
 from client.session import Session
 from client.actions import *
-from client.responses import *
+from client.responses import ErrorResponse
 from player.player import Player
 from player.engine import Bot
 from model.hex import *
+from model.game import Game
 from model.map import GameMap
+from model.action import TurnActions, MoveAction
+from model.vehicle import *
 from graphics.window import Window
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
-    level=logging.DEBUG)
+    level=logging.INFO)
 
 
 class TasksGroup:
@@ -41,10 +44,11 @@ def handle_response(resp):
 
 
 if __name__ == "__main__":
-    num_of_players = 2
+    num_of_players = 3
     game_name = f"yagde-test-game-{time.time()}"
 
-    window = Window(1080, 1080, "YAGDE")
+    window = Window(1400, 1200, "YAGDE")
+    game = Game()
 
     with ExitStack() as stack:
         observer_session = Session("wgforge-srv.wargaming.net", 443)
@@ -66,16 +70,11 @@ if __name__ == "__main__":
             players.append((player_bot, session))
 
         map_response = handle_response(observer_session.map())
-        game_map = GameMap.from_map_response(map_response)
+        game.init_map(map_response)
 
         game_state = handle_response(observer_session.game_state())
 
         while not game_state.finished:
-            game_map.update_vehicles_from_state_response(game_state)
-
-            window.draw(game_map)
-            window.update()
-
             logging.info(f"Current player: {game_state.current_player_idx}")
 
             turns = TasksGroup()
@@ -116,10 +115,18 @@ if __name__ == "__main__":
 
             turns.join()
 
-            # Update game state
+            # Get actions of this turn
+            actions = handle_response(observer_session.game_actions())
+
+            game.update_state(game_state, actions)
+
+            window.draw(game)
+            window.update()
+
+            # Request next game state
             game_state = handle_response(observer_session.game_state())
 
             # Wait for a while
-            time.sleep(0.5)
+            time.sleep(1)
 
         logging.info(f"Winner: {game_state.winner}")
