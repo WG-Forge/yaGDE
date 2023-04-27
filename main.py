@@ -47,7 +47,7 @@ if __name__ == "__main__":
     num_of_players = 3
     game_name = f"yagde-test-game-{time.time()}"
 
-    window = Window(1400, 1400, "YAGDE")
+    window = Window(1400, 1200, "YAGDE")
     game = Game()
 
     with ExitStack() as stack:
@@ -117,8 +117,6 @@ if __name__ == "__main__":
 
             # Get actions of this turn
             actions = handle_response(observer_session.game_actions())
-
-            logging.info(f"Actions: {actions}")
 
             game.update_state(game_state, actions)
 

@@ -5,10 +5,10 @@ from model.hex import *
 
 
 def hex_size(width: int, height: int, map_size: int) -> float:
-    # Calculates the size of a hexagon to fit the given screen exactly.
+    # Calculates the size of a hexagon to fit the given surface exactly.
     #
-    # <param name="width">Width of the screen.</param>
-    # <param name="height">Height of the screen.</param>
+    # <param name="width">Width of the surface.</param>
+    # <param name="height">Height of the surface.</param>
     # <param name="map_size">Size of the map.</param>
     # Note: flat top orientation is assumed
 

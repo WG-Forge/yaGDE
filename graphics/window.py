@@ -177,9 +177,11 @@ PLAYERS_COLORS = [
 GRID_COLOR = (0, 0, 0)
 GRID_WIDTH = 5
 
-MOVE_COLOR = (64, 64, 255)
-SHOOT_COLOR = (255, 0, 0)
-ARROW_WIDTH = 5
+MOVE_COLOR = (64, 64, 255, 200)
+SHOOT_COLOR = (255, 0, 0, 200)
+ARROW_WIDTH = 15
+
+DRAW_SURFACE_SIZE = 3840
 
 
 class Window:
@@ -194,6 +196,8 @@ class Window:
         self.height = height
         self.title = title
         self.screen = pygame.display.set_mode((self.width, self.height))
+        self.surface = pygame.Surface((DRAW_SURFACE_SIZE, DRAW_SURFACE_SIZE),
+                                      pygame.SRCALPHA)
         self.hex_size = None
 
         pygame.display.set_caption(self.title)
@@ -210,15 +214,15 @@ class Window:
         )
         actions = game.actions
 
-        self.hex_size = hex_size(self.width * 4 // 5,
-                                 self.height * 4 // 5,
+        self.hex_size = hex_size(self.surface.get_width() // 5 * 4,
+                                 self.surface.get_height() // 5 * 5,
                                  game_map.size)
 
-        self.screen.fill((255, 255, 255))
+        self.surface.fill((255, 255, 255))
 
         # Draw contents
         for hex, content in game_map.contents.items():
-            surf = self.__hex_subsurface(hex, self.hex_size)
+            surf = self.__hex_subsurface(hex)
             draw = ContentDraw(surf, content)
             draw.draw()
 
@@ -227,7 +231,7 @@ class Window:
 
         # Draw vehicles
         for hex, vehicle in game_map.vehicles.items():
-            surf = self.__hex_subsurface(hex, self.hex_size)
+            surf = self.__hex_subsurface(hex)
             draw = VehicleDraw(
                 surf, vehicle, players_colors[vehicle.playerId])
             draw.draw()
@@ -242,41 +246,57 @@ class Window:
             vehicle = game_map.vehicle_by(shoot.vehicleId)
             self.__draw_arrow(vehicle.position, shoot.target, SHOOT_COLOR)
 
+        self.__flush()
+
+    def __flush(self):
+        screen_rect = self.screen.get_rect()
+        result_rect = self.surface.get_rect(center=screen_rect.center)
+
+        scale = min(screen_rect.width / result_rect.width,
+                    screen_rect.height / result_rect.height)
+        result_rect.scale_by_ip(scale)
+        result = pygame.transform.smoothscale_by(
+            pygame.transform.flip(self.surface, True, False),
+            scale)
+
+        self.screen.fill((255, 255, 255))
+        self.screen.blit(result, result_rect)
+
     def update(self):
         # Updates the window.
         # This should be called after each draw.
 
         pygame.display.update()
 
-    def __hex_center(self, hex: Hex, size: float) -> Vector2:
+    def __hex_center(self, hex: Hex) -> Vector2:
         # Calculates the center of a hexagon.
         #
         # <param name="hex">Hexagon to calculate the center of.</param>
-        # <param name="size">Size of the hexagon.</param>
 
-        return hex_center(hex, size) + Vector2(self.width / 2, self.height / 2)
+        return hex_center(hex, self.hex_size) + Vector2(self.surface.get_width(), self.surface.get_height()) / 2
 
-    def __hex_subsurface(self, hex: Hex, size: float) -> HexSurface:
+    def __hex_subsurface(self, hex: Hex) -> HexSurface:
         # Creates a subsurface for a hexagon.
         #
         # <param name="hex">Hexagon to create the subsurface for.</param>
         # <param name="size">Size of the hexagon.</param>
 
-        center = self.__hex_center(hex, size)
-        width = size * 2
-        height = size * sqrt(3)
+        center = self.__hex_center(hex)
+
+        width = self.hex_size * 2
+        height = self.hex_size * sqrt(3)
 
         # Here we add some extra space to the surface to
         # make sure that the hexagon is fully visible.
         delta = 25
-        surface = self.screen.subsurface(
+        surface = self.surface.subsurface(
             center.x - width / 2 - delta,
             center.y - height / 2 - delta,
             width + 2 * delta,
             height + 2 * delta
         )
 
-        return HexSurface(surface, size)
+        return HexSurface(surface, self.hex_size)
 
     def __draw_grid(self, map_size: int):
         # Draws the grid on the window.
@@ -284,7 +304,7 @@ class Window:
         # <param name="map_size">Size of the map.</param>
 
         for hex in hexes_range(map_size):
-            surf = self.__hex_subsurface(hex, self.hex_size)
+            surf = self.__hex_subsurface(hex)
             surf.draw_hex(GRID_COLOR, GRID_WIDTH)
 
     def __draw_arrow(self, start: Hex, end: Hex, color):
@@ -295,14 +315,14 @@ class Window:
 
         angle = pi / 4
 
-        back = self.__hex_center(start, self.hex_size)
-        point = self.__hex_center(end, self.hex_size)
+        back = self.__hex_center(start)
+        point = self.__hex_center(end)
         basis = (back - point).normalize() * self.hex_size * 0.5
         right = basis.rotate_rad(angle) + point
         left = basis.rotate_rad(-angle) + point
 
-        pygame.draw.circle(self.screen, color, back, ARROW_WIDTH, 0)
-        pygame.draw.line(self.screen, color,
+        pygame.draw.circle(self.surface, color, back, ARROW_WIDTH, 0)
+        pygame.draw.line(self.surface, color,
                          back, point + basis * cos(angle) / 2,
                          ARROW_WIDTH)
-        pygame.draw.polygon(self.screen, color, [right, left, point])
+        pygame.draw.polygon(self.surface, color, [right, left, point])
