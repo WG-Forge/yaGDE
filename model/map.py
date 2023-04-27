@@ -47,5 +47,18 @@ class GameMap:
             return self.content[hex]
         return None
 
+    def vehicle_by(self, id: VehicleId) -> Vehicle | None:
+        # Get vehicle by id
+        #
+        # <param name="id">Vehicle id</param>
+        # <returns>Vehicle with id or None if there is none</returns>
+
+        # TODO: This is O(n) and should be O(1)
+        for vehicle in self.vehicles.values():
+            if vehicle.id == id:
+                return vehicle
+
+        return None
+
     def __repr__(self):
         return f"GameMap(size={self.size}, content={self.content}, vehicles={self.vehicles})"

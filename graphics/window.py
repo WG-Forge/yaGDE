@@ -88,7 +88,7 @@ class HexSurface:
 
 
 CONTENT_COLORS = {
-    Content.BASE: (0, 255, 0, 128),
+    Content.BASE: (0, 255, 0, 16),
     Content.OBSTACLE: (0, 0, 0),
     Content.LIGHT_REPAIR: (128, 255, 0, 128),
     Content.HARD_REPAIR: (255, 128, 0, 128),
@@ -174,6 +174,13 @@ PLAYERS_COLORS = [
     (64, 0, 128)
 ]
 
+GRID_COLOR = (0, 0, 0)
+GRID_WIDTH = 5
+
+MOVE_COLOR = (64, 64, 255)
+SHOOT_COLOR = (255, 0, 0)
+ARROW_WIDTH = 5
+
 
 class Window:
     # Window to draw the game on.
@@ -201,6 +208,7 @@ class Window:
             # Sort players to insure stable color picking
             zip(sorted(game.players), PLAYERS_COLORS)
         )
+        actions = game.actions
 
         self.hex_size = hex_size(self.width * 4 // 5,
                                  self.height * 4 // 5,
@@ -214,6 +222,9 @@ class Window:
             draw = ContentDraw(surf, content)
             draw.draw()
 
+        # Draw grid
+        self.__draw_grid(game_map.size)
+
         # Draw vehicles
         for hex, vehicle in game_map.vehicles.items():
             surf = self.__hex_subsurface(hex, self.hex_size)
@@ -221,8 +232,15 @@ class Window:
                 surf, vehicle, players_colors[vehicle.playerId])
             draw.draw()
 
-        # Draw grid
-        self.__draw_grid(game_map.size)
+        # Draw moves
+        for move in actions.moves:
+            vehicle = game_map.vehicle_by(move.vehicleId)
+            self.__draw_arrow(vehicle.position, move.target, MOVE_COLOR)
+
+        # Draw shoots
+        for shoot in actions.shoots:
+            vehicle = game_map.vehicle_by(shoot.vehicleId)
+            self.__draw_arrow(vehicle.position, shoot.target, SHOOT_COLOR)
 
     def update(self):
         # Updates the window.
@@ -265,9 +283,26 @@ class Window:
         #
         # <param name="map_size">Size of the map.</param>
 
-        color = (0, 0, 0)
-        width = 5
-
         for hex in hexes_range(map_size):
             surf = self.__hex_subsurface(hex, self.hex_size)
-            surf.draw_hex(color, width)
+            surf.draw_hex(GRID_COLOR, GRID_WIDTH)
+
+    def __draw_arrow(self, start: Hex, end: Hex, color):
+        # Draws an arrow from one hex to another.
+        #
+        # <param name="start">Hex to draw the arrow from.</param>
+        # <param name="end">Hex to draw the arrow to.</param>
+
+        angle = pi / 4
+
+        back = self.__hex_center(start, self.hex_size)
+        point = self.__hex_center(end, self.hex_size)
+        basis = (back - point).normalize() * self.hex_size * 0.5
+        right = basis.rotate_rad(angle) + point
+        left = basis.rotate_rad(-angle) + point
+
+        pygame.draw.circle(self.screen, color, back, ARROW_WIDTH, 0)
+        pygame.draw.line(self.screen, color,
+                         back, point + basis * cos(angle) / 2,
+                         ARROW_WIDTH)
+        pygame.draw.polygon(self.screen, color, [right, left, point])

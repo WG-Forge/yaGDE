@@ -35,10 +35,10 @@ def regular_polygon_corners(sides: int, size: float = 1, angle: float = 0) -> li
     # Calculates corners of a regular polygon with the given size.
 
     angle_diff = 2 * pi / sides
+    basis = Vector2(size, 0)
 
     return [
-        size * Vector2(cos(angle + angle_diff * i),
-                       sin(angle + angle_diff * i))
+        basis.rotate_rad(angle + angle_diff * i)
         for i in range(sides)
     ]
 
