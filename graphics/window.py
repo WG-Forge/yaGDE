@@ -5,6 +5,7 @@ from pygame.surface import Surface
 
 from model.hex import *
 from model.map import *
+from model.game import *
 from model.common import *
 from model.vehicle import *
 from graphics.utils import *
@@ -113,30 +114,32 @@ class ContentDraw:
 class VehicleDraw:
     # Draws a vehicle on a hexagon.
 
-    def __init__(self, surf: HexSurface, vehicle: Vehicle):
+    def __init__(self, surf: HexSurface, vehicle: Vehicle, color):
         # <param name="surf">Hex Surface to draw on.</param>
         # <param name="vehicle">Vehicle to draw.</param>
 
         self.surf = surf
         self.vehicle = vehicle
+        self.color = color
 
     def __draw_symbol(self):
-        # TODO: Pick color by player id
-        color = (255, 0, 0)
         factor = 0.6
         match self.vehicle.type:
             case VehicleType.LIGHT_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=0)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=0)
             case VehicleType.MEDIUM_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=1)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=1)
             case VehicleType.HEAVY_TANK:
-                self.surf.draw_lined_diamond(color, factor=factor, num_lines=2)
+                self.surf.draw_lined_diamond(
+                    self.color, factor=factor, num_lines=2)
             case VehicleType.SPG:
                 self.surf.draw_regular_polygon(
-                    color, 4, factor=factor, angle=-pi/4)
+                    self.color, 4, factor=factor, angle=-pi/4)
             case VehicleType.AT_SPG:
                 self.surf.draw_regular_polygon(
-                    color, 3, factor=factor, angle=-pi/6)
+                    self.color, 3, factor=factor, angle=-pi/6)
             case _:
                 raise ValueError("Unknown vehicle type")
 
@@ -163,6 +166,15 @@ class VehicleDraw:
         self.__draw_hp()
 
 
+PLAYERS_COLORS = [
+    (128, 0, 32),
+    (255, 128, 0),
+    (0, 128, 128),
+    (128, 0, 128),
+    (64, 0, 128)
+]
+
+
 class Window:
     # Window to draw the game on.
 
@@ -179,10 +191,16 @@ class Window:
 
         pygame.display.set_caption(self.title)
 
-    def draw(self, game_map: GameMap):
+    def draw(self, game: Game):
         # Draws the game map on the window.
         #
-        # <param name="game_map">Game map to draw.</param>
+        # <param name="game">Game to draw.</param>
+
+        game_map = game.map
+        players_colors = dict(
+            # Sort players to insure stable color picking
+            zip(sorted(game.players), PLAYERS_COLORS)
+        )
 
         self.hex_size = hex_size(self.width * 4 // 5,
                                  self.height * 4 // 5,
@@ -199,7 +217,8 @@ class Window:
         # Draw vehicles
         for hex, vehicle in game_map.vehicles.items():
             surf = self.__hex_subsurface(hex, self.hex_size)
-            draw = VehicleDraw(surf, vehicle)
+            draw = VehicleDraw(
+                surf, vehicle, players_colors[vehicle.playerId])
             draw.draw()
 
         # Draw grid
