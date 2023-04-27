@@ -35,6 +35,13 @@ class GameMap:
             for vid, vehicle in state_response.vehicles.items()
         }
 
+    def get_spawn_points(self) -> List[Hex]:
+        # Get spawn points
+        #
+        # <returns>List of spawn points</returns>
+
+        return [vehicle.spawn for vehicle in self.vehicles.values()]
+
     def at(self, hex: Hex) -> Content | Vehicle | None:
         # Get content or vehicle at hex
         #

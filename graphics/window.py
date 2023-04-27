@@ -174,6 +174,8 @@ PLAYERS_COLORS = [
     (64, 0, 128)
 ]
 
+SPAWN_COLOR = (255, 128, 64, 128)
+
 GRID_COLOR = (0, 0, 0)
 GRID_WIDTH = 5
 
@@ -225,6 +227,11 @@ class Window:
             surf = self.__hex_subsurface(hex)
             draw = ContentDraw(surf, content)
             draw.draw()
+
+        # Draw spawns
+        for hex in game_map.get_spawn_points():
+            surf = self.__hex_subsurface(hex)
+            surf.draw_hex(SPAWN_COLOR, 0)
 
         # Draw grid
         self.__draw_grid(game_map.size)
