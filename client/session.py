@@ -1,7 +1,7 @@
 from typing import *
-import socket
 import json
 import struct
+import asyncio as aio
 import logging as log
 
 from client.actions import *
@@ -80,43 +80,54 @@ def deserialize_error_response(c: ResponseCode, data: bytes) -> ErrorResponse:
     """
     data = data.decode("utf-8")
     data = json.loads(data)
+
     return ErrorResponse(c, data["error_message"])
 
 
 class Session:
     def __init__(self, addr: str, port: int):
-        self.server_addr = (addr, port)
-        self.sock = None
+        self.addr = addr
+        self.port = port
+        self.reader = None
+        self.writer = None
+        self.is_connected = False
 
-    def __enter__(self):
-        self.connect()
+    async def __aenter__(self):
+        await self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_value, tb):
-        self.disconnect()
+    async def __aexit__(self, exc_type, exc_value, tb):
+        await self.disconnect()
 
-    def connect(self):
-        if self.sock is not None:
+    async def connect(self):
+        if self.is_connected:
             raise RuntimeError("Already connected")
 
-        self.sock = socket.create_connection(self.server_addr)
+        self.reader, self.writer = await aio.open_connection(self.addr, self.port)
+        self.is_connected = True
 
-    def disconnect(self):
-        if self.sock is None:
+    async def disconnect(self):
+        if not self.is_connected:
             raise RuntimeError("Not connected")
 
-        self.sock.shutdown(socket.SHUT_RDWR)
-        self.sock.close()
-        self.sock = None
+        self.writer.close()
+        await self.writer.wait_closed()
+        self.is_connected = False
 
-    def action(self, t: ActionType, action: Optional[Action] = None) -> ActionResponse | ErrorResponse:
+    async def action(self, t: ActionType, action: Optional[Action] = None) -> ActionResponse | ErrorResponse:
         data = serialize_action(t, action)
-        self._sendall(data)
+
+        self.writer.write(data)
+        await self.writer.drain()
+
         log.debug(f"Sent action {str(t)} - {action}, encoded: {data}")
-        header = self._recvall(8)
+
+        header = await self.reader.readexactly(8)
         c, l = deserialize_response_header(header)
+
         log.debug(f"Received header: code {str(c)}, length {l}")
-        data = self._recvall(l)
+
+        data = await self.reader.readexactly(l)
         match c:
             case ResponseCode.OKEY:
                 log.debug(f"Received response data: {data}")
@@ -129,41 +140,29 @@ class Session:
                 log.debug(f"Deserialized response: {response}")
                 return response
 
-    def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:
-        return self.action(ProtocolAction.LOGIN, action)
+    async def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:
+        return await self.action(ProtocolAction.LOGIN, action)
 
-    def logout(self) -> None | ErrorResponse:
-        return self.action(ProtocolAction.LOGOUT)
+    async def logout(self) -> None | ErrorResponse:
+        return await self.action(ProtocolAction.LOGOUT)
 
-    def map(self) -> MapResponse | ErrorResponse:
-        return self.action(ProtocolAction.MAP)
+    async def map(self) -> MapResponse | ErrorResponse:
+        return await self.action(ProtocolAction.MAP)
 
-    def game_state(self) -> GameStateResponse | ErrorResponse:
-        return self.action(ProtocolAction.GAME_STATE)
+    async def game_state(self) -> GameStateResponse | ErrorResponse:
+        return await self.action(ProtocolAction.GAME_STATE)
 
-    def game_actions(self) -> GameActionsResponse | ErrorResponse:
-        return self.action(ProtocolAction.GAME_ACTIONS)
+    async def game_actions(self) -> GameActionsResponse | ErrorResponse:
+        return await self.action(ProtocolAction.GAME_ACTIONS)
 
-    def turn(self) -> None | ErrorResponse:
-        return self.action(ProtocolAction.TURN)
+    async def turn(self) -> None | ErrorResponse:
+        return await self.action(ProtocolAction.TURN)
 
-    def chat(self, action: ChatAction) -> None | ErrorResponse:
-        return self.action(GameAction.CHAT, action)
+    async def chat(self, action: ChatAction) -> None | ErrorResponse:
+        return await self.action(GameAction.CHAT, action)
 
-    def move(self, action: MoveAction) -> None | ErrorResponse:
-        return self.action(GameAction.MOVE, action)
+    async def move(self, action: MoveAction) -> None | ErrorResponse:
+        return await self.action(GameAction.MOVE, action)
 
-    def shoot(self, action: ShootAction) -> None | ErrorResponse:
-        return self.action(GameAction.SHOOT, action)
-
-    def _sendall(self, data: bytes) -> None:
-        self.sock.sendall(data)
-
-    def _recvall(self, n: int) -> bytes:
-        data = b''
-        while len(data) < n:
-            packet = self.sock.recv(n - len(data))
-            if not packet:
-                raise RuntimeError("Socket connection broken")
-            data += packet
-        return data
+    async def shoot(self, action: ShootAction) -> None | ErrorResponse:
+        return await self.action(GameAction.SHOOT, action)

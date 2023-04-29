@@ -46,7 +46,7 @@ class Bot(Player):
         # if he wasn't attacked just attack
         return True
 
-    def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle, game_actions: ActionResponse) -> bool:
+    async def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle, game_actions: ActionResponse) -> bool:
         target = None
         minHp = maxHp
         for vehicle_id, vehicle in self._enemyVehicles.items():
@@ -54,7 +54,7 @@ class Bot(Player):
                 minHp = vehicle.health
                 target = vehicle
         if target is not None:
-            Player.shoot_vehicle(self, my_vehicle_id, target)
+            await Player.shoot_vehicle(self, my_vehicle_id, target)
             return True
         return False
 
@@ -74,7 +74,7 @@ class Bot(Player):
                 res.append(MapHex(*position))
         return res
 
-    def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle, map: MapResponse) -> List:
+    async def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle, map: MapResponse) -> List:
         exclude = self.__collectExcludedNodes(vehicle_id, map)
 
         # find next node to move
@@ -94,21 +94,21 @@ class Bot(Player):
         elif vehicle.vehicle_type == VehicleType.AT_SPG:
             moveHex = AT_SPG.move(path)
 
-        self.move_vehicle(vehicle_id, moveHex)
+        await self.move_vehicle(vehicle_id, moveHex)
         self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(
             position=moveHex)
 
-    def __vehicle_action(self, vehicles, map: MapResponse, game_actions: ActionResponse):
+    async def __vehicle_action(self, vehicles, map: MapResponse, game_actions: ActionResponse):
         # try to shot
         for vehicle_id, vehicle in vehicles.items():
-            shooted = self._shoot_with_vehicle(
+            shooted = await self._shoot_with_vehicle(
                 vehicle_id, vehicle, game_actions)
 
             # now move to the center if didn't shot
             if shooted == False:
-                self.__execute_movement(vehicle_id, vehicle, map)
+                await self.__execute_movement(vehicle_id, vehicle, map)
 
-    def bot_engine(self, game_state: GameStateResponse, map_response: MapResponse, game_actions_response: GameActionsResponse):
+    async def bot_engine(self, game_state: GameStateResponse, map_response: MapResponse, game_actions_response: GameActionsResponse):
         spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
         ) if vehicle.vehicle_type == VehicleType.SPG}
         light = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
@@ -121,8 +121,8 @@ class Bot(Player):
         ) if vehicle.vehicle_type == VehicleType.AT_SPG}
 
         # move each one of vehicles
-        self.__vehicle_action(spg, map_response, game_actions_response)
-        self.__vehicle_action(light, map_response, game_actions_response)
-        self.__vehicle_action(heavy, map_response, game_actions_response)
-        self.__vehicle_action(medium, map_response, game_actions_response)
-        self.__vehicle_action(at_spg, map_response, game_actions_response)
+        await self.__vehicle_action(spg, map_response, game_actions_response)
+        await self.__vehicle_action(light, map_response, game_actions_response)
+        await self.__vehicle_action(heavy, map_response, game_actions_response)
+        await self.__vehicle_action(medium, map_response, game_actions_response)
+        await self.__vehicle_action(at_spg, map_response, game_actions_response)
