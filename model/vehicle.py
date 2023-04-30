@@ -80,7 +80,7 @@ class Vehicle:
         self.shooting_range = VEHICLE_SHOOTING_RANGE[typ]
         self.position = position
         self.spawn = spawn
-        self.bonus = bool
+        self.bonus = bonus
 
     @staticmethod
     def from_vehicle_response(vid: ResponseVehicleId, vehicle: ResponseVehicle):
