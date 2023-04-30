@@ -88,7 +88,7 @@ class HexSurface:
 
 
 CONTENT_COLORS = {
-    Content.BASE: (0, 255, 0, 16),
+    Content.BASE: (0, 255, 0, 128),
     Content.OBSTACLE: (0, 0, 0),
     Content.LIGHT_REPAIR: (128, 255, 0, 128),
     Content.HARD_REPAIR: (255, 128, 0, 128),

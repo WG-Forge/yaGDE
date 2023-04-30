@@ -41,6 +41,13 @@ class Hex(NamedTuple):
         for diff in hexes_range(*args):
             yield self + diff
 
+    def on_line(self, other):
+        # Returns if this hex is one one line with the other.
+        #
+        # <param name="other">Other hex.</param>
+
+        return self.q == other.q or self.r == other.r or self.s == other.s
+
     @staticmethod
     def from_hex_response(hex: ResponseHex):
         return Hex(*hex)

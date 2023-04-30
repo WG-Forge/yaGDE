@@ -1,128 +1,84 @@
 from typing import *
 
-from client.responses import *
-from client.session import Session
-from player.player import *
-from ai.pathFinder import AStarPathfinding
-from model.hex import Hex as MapHex
+from ai.pathFinder import *
+from model.hex import *
+from model.game import *
+from model.vehicle import *
+from model.common import *
+from model.action import *
 
 
-from player.tanks import *
+VEHICLE_TURN_ORDER = [
+    VehicleType.SPG,
+    VehicleType.LIGHT_TANK,
+    VehicleType.HEAVY_TANK,
+    VehicleType.MEDIUM_TANK,
+    VehicleType.AT_SPG
+]
 
 
-maxHp = 3
+class Engine():
 
+    def __init__(self, game: Game, player_id: PlayerId):
+        self.game = game
+        self.player_id = player_id
+        self.actions = []
+        self.path_finder = AStarPathfinding(game.map.size)
 
-def handle_response(resp):
-    match resp:
-        case ErrorResponse(_, error_message):
-            raise RuntimeError(f"Server error: {error_message}")
-        case _:
-            return resp
+    def __shoot(self, vehicle: Vehicle, enemy: Vehicle):
+        self.actions.append(
+            ShootAction(self.player_id, vehicle.id, enemy.position)
+        )
 
+    def __move(self, vehicle: Vehicle, target: Hex):
+        self.actions.append(
+            MoveAction(self.player_id, vehicle.id, target)
+        )
 
-class Bot(Player):
-    def __init__(self, s: Session, player_info: LoginResponse):
-        super().__init__(s, player_info)
-        self._pathFinder = AStarPathfinding()
-
-    def __check_neutrality(self, game_actions: GameActionsResponse, target_vehicle: Vehicle):
-        shot_actions = [
-            action for action in game_actions.actions if action.action_type == GameAction.SHOOT]
-        target_positions = [vehicle.position for vehicle in self._enemyVehicles.values(
-        ) if target_vehicle.player_id == vehicle.player_id]
-        ally_positions = [
-            vehicle.position for vehicle in self._allyVehicles.values()]
-
-        # check if target attacked me
-        for action in shot_actions:
-            if action.player_id == target_vehicle.player_id and action.data.target in ally_positions:
-                return True
-
-        # check if target was attacked in previous round
-        for action in shot_actions:
-            if action.player_id != target_vehicle.player_id and action.data.target in target_positions:
-                return False
-        # if he wasn't attacked just attack
-        return True
-
-    def _shoot_with_vehicle(self, my_vehicle_id: VehicleId, my_vehicle: Vehicle, game_actions: ActionResponse) -> bool:
+    def __shoot_with_vehicle(self, vehicle: Vehicle) -> bool:
         target = None
-        minHp = maxHp
-        for vehicle_id, vehicle in self._enemyVehicles.items():
-            if self.__check_neutrality(game_actions, vehicle) and check_range(game_actions, my_vehicle, vehicle) and minHp >= vehicle.health:
-                minHp = vehicle.health
-                target = vehicle
+
+        for enemy in self.game.get_enemy_vehicles_for(self.player_id):
+            can_attack = self.game.check_neutrality(vehicle, enemy)
+            in_range = vehicle.in_shooting_range(enemy.position)
+
+            if not can_attack or not in_range:
+                continue
+
+            if target is None or target.hp < enemy.hp:
+                target = enemy
+
         if target is not None:
-            Player.shoot_vehicle(self, my_vehicle_id, target)
+            self.__shoot(vehicle, target)
             return True
+
         return False
 
-    def __collectExcludedNodes(self, my_vehicle_id: VehicleId, map: MapResponse) -> List:
-        res = []
-        # Nodes of all vehicles should be excluded from pathFinder algorithm
-        for vehicle_id, vehicle in self._enemyVehicles.items():
-            res.append(MapHex(*vehicle.position))
-        for vehicle_id, vehicle in self._allyVehicles.items():
-            if vehicle_id == my_vehicle_id:
-                continue
-            res.append(MapHex(*vehicle.position))
+    def __move_vehicle(self, vehicle: Vehicle):
+        obstacles = self.game.get_obstacles_for(self.player_id)
+        target = Hex(0, 0, 0)
 
-        # All obstacles should be excluded as well
-        if MapContent.OBSTACLE in map.content:
-            for position in map.content[MapContent.OBSTACLE]:
-                res.append(MapHex(*position))
-        return res
+        path = self.path_finder.path(vehicle.position,
+                                     target,
+                                     obstacles)
+        if path:
+            move = vehicle.pick_move(path)
+            self.__move(vehicle, move)
 
-    def __execute_movement(self, vehicle_id: VehicleId, vehicle: Vehicle, map: MapResponse) -> List:
-        exclude = self.__collectExcludedNodes(vehicle_id, map)
+    def __vehicle_action(self, vehicle):
+        shooted = self.__shoot_with_vehicle(vehicle)
 
-        # find next node to move
-        path = self._pathFinder.path(
-            MapHex(*vehicle.position),
-            MapHex(0, 0, 0),
-            exclude)
-        moveHex = Hex(0, 0, 0)
-        if vehicle.vehicle_type == VehicleType.SPG:
-            moveHex = SPG.move(path)
-        elif vehicle.vehicle_type == VehicleType.LIGHT_TANK:
-            moveHex = Light.move(path)
-        elif vehicle.vehicle_type == VehicleType.HEAVY_TANK:
-            moveHex = Heavy.move(path)
-        elif vehicle.vehicle_type == VehicleType.MEDIUM_TANK:
-            moveHex = Medium.move(path)
-        elif vehicle.vehicle_type == VehicleType.AT_SPG:
-            moveHex = AT_SPG.move(path)
+        if shooted == False:
+            self.__move_vehicle(vehicle)
 
-        self.move_vehicle(vehicle_id, moveHex)
-        self._allyVehicles[vehicle_id] = self._allyVehicles[vehicle_id]._replace(
-            position=moveHex)
+    def make_turn(self):
+        vehicles = self.game.get_vehicles_for(self.player_id)
 
-    def __vehicle_action(self, vehicles, map: MapResponse, game_actions: ActionResponse):
-        # try to shot
-        for vehicle_id, vehicle in vehicles.items():
-            shooted = self._shoot_with_vehicle(
-                vehicle_id, vehicle, game_actions)
+        for vehicle_type in VEHICLE_TURN_ORDER:
+            for vehicle in vehicles[vehicle_type]:
+                self.__vehicle_action(vehicle)
 
-            # now move to the center if didn't shot
-            if shooted == False:
-                self.__execute_movement(vehicle_id, vehicle, map)
+        result = self.actions
+        self.actions = []
 
-    def bot_engine(self, game_state: GameStateResponse, map_response: MapResponse, game_actions_response: GameActionsResponse):
-        spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
-        ) if vehicle.vehicle_type == VehicleType.SPG}
-        light = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
-        ) if vehicle.vehicle_type == VehicleType.LIGHT_TANK}
-        heavy = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
-        ) if vehicle.vehicle_type == VehicleType.HEAVY_TANK}
-        medium = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
-        ) if vehicle.vehicle_type == VehicleType.MEDIUM_TANK}
-        at_spg = {vehicle_id: vehicle for vehicle_id, vehicle in self._allyVehicles.items(
-        ) if vehicle.vehicle_type == VehicleType.AT_SPG}
-
-        # move each one of vehicles
-        self.__vehicle_action(spg, map_response, game_actions_response)
-        self.__vehicle_action(light, map_response, game_actions_response)
-        self.__vehicle_action(heavy, map_response, game_actions_response)
-        self.__vehicle_action(medium, map_response, game_actions_response)
-        self.__vehicle_action(at_spg, map_response, game_actions_response)
+        return result

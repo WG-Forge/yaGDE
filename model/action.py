@@ -9,6 +9,9 @@ class ChatAction:
         self.playerId = playerId
         self.message = message
 
+    def __repr__(self) -> str:
+        return f"ChatAction(playerId={self.playerId}, message={self.message})"
+
 
 class MoveAction:
     def __init__(self, playerId: PlayerId, vehicleId: VehicleId, target: Hex):
@@ -16,12 +19,18 @@ class MoveAction:
         self.vehicleId = vehicleId
         self.target = target
 
+    def __repr__(self) -> str:
+        return f"MoveAction(playerId={self.playerId}, vehicleId={self.vehicleId}, target={self.target})"
+
 
 class ShootAction:
     def __init__(self, playerId: PlayerId, vehicleId: VehicleId, target: Hex):
         self.playerId = playerId
         self.vehicleId = vehicleId
         self.target = target
+
+    def __repr__(self) -> str:
+        return f"ShootAction(playerId={self.playerId}, vehicleId={self.vehicleId}, target={self.target})"
 
 
 class TurnActions:

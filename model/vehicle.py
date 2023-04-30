@@ -57,6 +57,14 @@ VEHICLE_DAMAGE_POINTS = {
     VehicleType.SPG: 1,
 }
 
+VEHICLE_SHOOTING_RANGE = {
+    VehicleType.LIGHT_TANK: (2, 2),
+    VehicleType.MEDIUM_TANK: (2, 2),
+    VehicleType.HEAVY_TANK: (1, 2),
+    VehicleType.AT_SPG: (1, 3),
+    VehicleType.SPG: (3, 3),
+}
+
 
 class Vehicle:
     def __init__(self, id: VehicleId, playerId: PlayerId,
@@ -69,6 +77,7 @@ class Vehicle:
         self.max_hp = VEHICLE_MAX_HP[typ]
         self.speed = VEHICLE_SPEED_POINTS[typ]
         self.damage = VEHICLE_DAMAGE_POINTS[typ]
+        self.shooting_range = VEHICLE_SHOOTING_RANGE[typ]
         self.position = position
         self.spawn = spawn
 
@@ -82,6 +91,28 @@ class Vehicle:
             hp=vehicle.health,
             position=Hex.from_hex_response(vehicle.position),
         )
+
+    def in_shooting_range(self, target: Hex) -> bool:
+        dist = self.position.distance(target)
+        rl, ru = self.shooting_range
+        in_range = rl <= dist <= ru
+
+        match self.type:
+            case VehicleType.AT_SPG:
+                return in_range and self.position.on_line(target)
+            case _:
+                return in_range
+
+    def pick_move(self, path):
+        # Pick move target from path
+        #
+        # <param name="path">Path to target</param>
+        # <returns>Move target</returns>
+
+        if len(path) > self.speed:
+            return path[self.speed]
+        else:
+            return path[-1]
 
     def __repr__(self):
         return f"Vehicle(id={self.id}, playerId={self.playerId}, type={self.type}, hp={self.hp}, position={self.position})"
