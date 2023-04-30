@@ -5,15 +5,13 @@ import asyncio as aio
 import pygame
 
 from client.session import Session
-from client.actions import *
+from client.actions import LoginAction, MoveAction as ClientMoveAction, ShootAction as ClientShootAction
+from client.common import Hex as ClientHex, VehicleId as ClientVehicleId, PlayerId as ClientPlayerId
 from client.responses import ErrorResponse
-from player.player import Player
-from player.engine import Bot
-from model.hex import *
+from player.engine import Engine
 from model.game import Game
-from model.map import GameMap
-from model.action import TurnActions, MoveAction
-from model.vehicle import *
+from model.common import PlayerId
+from model.action import MoveAction, ShootAction
 from graphics.window import Window
 
 logging.basicConfig(
@@ -32,14 +30,7 @@ def handle_response(resp):
             return resp
 
 
-class Player:
-    def __init__(self, info, session):
-        self.info = info
-        self.session = session
-        self.bot = Bot(self.session, self.info)
-
-
-class Observer:
+class Client:
     def __init__(self, info, session):
         self.info = info
         self.session = session
@@ -49,6 +40,22 @@ class Sessions:
     def __init__(self, observer, players):
         self.observer = observer
         self.players = players
+
+
+async def send_action(session: Session, action):
+    match action:
+        case MoveAction(vehicleId=vehicleId, target=target):
+            await session.move(ClientMoveAction(
+                vehicle_id=ClientVehicleId(vehicleId),
+                target=ClientHex(*target),
+            ))
+        case ShootAction(vehicleId=vehicleId, target=target):
+            await session.shoot(ClientShootAction(
+                vehicle_id=ClientVehicleId(vehicleId),
+                target=ClientHex(*target),
+            ))
+        case _:
+            raise RuntimeError(f"Unknown action type: {action}")
 
 
 async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name: str):
@@ -61,7 +68,7 @@ async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name:
     observer_info = handle_response(
         await observer_session.login(observer_login)
     )
-    observer = Observer(observer_info, observer_session)
+    observer = Client(observer_info, observer_session)
 
     players = []
     for i in range(num_of_players):
@@ -71,9 +78,53 @@ async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name:
         player_info = handle_response(
             await player_session.login(player_login)
         )
-        players.append(Player(player_info, player_session))
+        players.append(Client(player_info, player_session))
 
     return Sessions(observer, players)
+
+
+async def make_turns(sessions: Sessions, current_player_idx: ClientPlayerId, game: Game):
+    observer = sessions.observer
+
+    logging.info(f"Current player: {current_player_idx}")
+
+    turn_tasks = []
+    async with aio.TaskGroup() as turns:
+        # Make current player turn
+        for player in sessions.players:
+            if player.info.idx != current_player_idx:
+                continue
+
+            engine = Engine(game, PlayerId(player.info.idx))
+
+            logging.info(f"Bot turn: {player.info.idx}")
+
+            actions = engine.make_turn()
+            for action in actions:
+                # TODO: Some actions fail (eg occupied hex in move), FIX IT
+                await send_action(player.session, action)
+
+            turn = turns.create_task(player.session.turn())
+            turn_tasks.append(turn)
+
+        # Make other players turns
+        for player in sessions.players:
+            if player.info.idx == current_player_idx:
+                continue
+
+            logging.info(f"Bot turn: {player.info.idx}")
+
+            turn = turns.create_task(player.session.turn())
+            turn_tasks.append(turn)
+
+        # Make observer turn
+        logging.info(f"Observer turn: {observer.info.idx}")
+
+        turn = turns.create_task(observer.session.turn())
+        turn_tasks.append(turn)
+
+    for turn in turn_tasks:
+        handle_response(turn.result())
 
 
 async def play():
@@ -90,75 +141,29 @@ async def play():
         map_response = handle_response(
             await observer.session.map()
         )
-        game_state = handle_response(
-            await observer.session.game_state()
-        )
 
         game.init_map(map_response)
 
-        while not game_state.finished:
-            logging.info(f"Current player: {game_state.current_player_idx}")
-
-            turn_tasks = []
-            async with aio.TaskGroup() as turns:
-                # Make current player turn
-                for player in sessions.players:
-                    if player.info.idx != game_state.current_player_idx:
-                        continue
-
-                    vehicles = player.bot.collect_vehicles(game_state)
-                    player.bot.update_vehicles(vehicles)
-
-                    map_response = handle_response(
-                        await player.session.map()
-                    )
-                    game_actions_response = handle_response(
-                        await player.session.game_actions()
-                    )
-
-                    await player.bot.bot_engine(
-                        game_state,
-                        map_response,
-                        game_actions_response
-                    )
-
-                    logging.info(f"Bot turn: {player.info.idx}")
-
-                    turn = turns.create_task(player.session.turn())
-                    turn_tasks.append(turn)
-
-                # Make other players turns
-                for player in sessions.players:
-                    if player.info.idx == game_state.current_player_idx:
-                        continue
-
-                    logging.info(f"Bot turn: {player.info.idx}")
-
-                    turn = turns.create_task(player.session.turn())
-                    turn_tasks.append(turn)
-
-                # Make observer turn
-                logging.info(f"Observer turn: {observer.info.idx}")
-                turn = turns.create_task(observer.session.turn())
-                turn_tasks.append(turn)
-
-            for turn in turn_tasks:
-                handle_response(turn.result())
-
-            # Get actions of this turn
-            actions = handle_response(
-                await observer.session.game_actions()
-            )
-
-            game.update_state(game_state, actions)
-
-            window.draw(game)
-            window.update()
-
-            # Request next game state
+        while True:
             game_state = handle_response(
                 await observer.session.game_state()
             )
+            game.update_state(game_state)
+
+            if game_state.finished:
+                await aio.sleep(1)
+                break
+
+            await make_turns(sessions, game_state.current_player_idx, game)
+
+            # Get actions of this turn
+            game_actions = handle_response(
+                await observer.session.game_actions()
+            )
+            game.update_actions(game_actions)
+
+            window.draw(game)
+            window.update()
 
             # Wait for a while
             await aio.sleep(1)

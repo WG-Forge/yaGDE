@@ -120,7 +120,7 @@ class Session:
         self.writer.write(data)
         await self.writer.drain()
 
-        log.debug(f"Sent action {str(t)} - {action}, encoded: {data}")
+        log.debug(f"Sent action {t.name} - {action}, encoded: {data}")
 
         header = await self.reader.readexactly(8)
         c, l = deserialize_response_header(header)
@@ -135,9 +135,9 @@ class Session:
                 log.debug(f"Deserialized response: {response}")
                 return response
             case _:
-                log.debug(f"Received response data: {data}")
+                log.error(f"Received response data: {data}")
                 response = deserialize_error_response(c, data)
-                log.debug(f"Deserialized response: {response}")
+                log.error(f"Deserialized response: {response}")
                 return response
 
     async def login(self, action: LoginAction) -> LoginResponse | ErrorResponse:

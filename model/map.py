@@ -67,5 +67,45 @@ class GameMap:
 
         return None
 
+    def get_vehicles_for(self, player_id: PlayerId) -> Dict[VehicleType, List[Vehicle]]:
+        # Get vehicles for player
+        #
+        # <param name="player_id">Player id</param>
+        # <returns>Dictionary of vehicle type to list of vehicles</returns>
+
+        vehicles = {}  # type: Dict[VehicleType, List[Vehicle]]
+        for vehicle in self.vehicles.values():
+            if vehicle.playerId != player_id:
+                continue
+
+            if vehicle.type not in vehicles:
+                vehicles[vehicle.type] = []
+
+            vehicles[vehicle.type].append(vehicle)
+
+        return vehicles
+
+    def get_enemy_vehicles_for(self, player_id: PlayerId) -> List[Vehicle]:
+        # Get enemy vehicles for player
+        #
+        # <param name="player_id">Player id</param>
+        # <returns>List of enemy vehicles</returns>
+
+        return [
+            vehicle
+            for vehicle in self.vehicles.values()
+            if vehicle.playerId != player_id
+        ]
+
+    def get_obstacles_for(self, player_id: PlayerId) -> List[Hex]:
+        # Get obstacles for player, i.e. hexes vahicles cannot move through
+        #
+        # <param name="player_id">Player id</param>
+        # <returns>List of obstacles</returns>
+
+        # Are enemy vehicles obstacles?
+        return [hex for hex, content in self.contents.items()
+                if content == Content.OBSTACLE]
+
     def __repr__(self):
         return f"GameMap(size={self.size}, content={self.content}, vehicles={self.vehicles})"
