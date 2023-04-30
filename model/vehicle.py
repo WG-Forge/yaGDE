@@ -92,14 +92,14 @@ class Vehicle:
             position=Hex.from_hex_response(vehicle.position),
         )
 
-    def in_shooting_range(self, target: Hex) -> bool:
+    def in_shooting_range(self, target: Hex, obstacles: List[Hex]) -> bool:
         dist = self.position.distance(target)
         rl, ru = self.shooting_range
         in_range = rl <= dist <= ru
 
         match self.type:
             case VehicleType.AT_SPG:
-                return in_range and self.position.on_line(target)
+                return in_range and self.position.on_line(target, obstacles)
             case _:
                 return in_range
 
@@ -108,7 +108,7 @@ class Vehicle:
         #
         # <param name="path">Path to target</param>
         # <returns>Move target</returns>
-        
+
         if len(path) > self.speed:
             return path[self.speed]
         else:

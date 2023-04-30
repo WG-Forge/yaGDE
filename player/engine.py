@@ -40,7 +40,7 @@ class Engine():
 
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
-            in_range = vehicle.in_shooting_range(enemy.position)
+            in_range = vehicle.in_shooting_range(enemy.position, self.game.map.get_obstacles_for(self.player_id))
 
             if not can_attack or not in_range:
                 continue
