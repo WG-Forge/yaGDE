@@ -106,6 +106,13 @@ class GameMap:
         # Are enemy vehicles obstacles?
         return [hex for hex, content in self.contents.items()
                 if content == Content.OBSTACLE]
+    
+    def get_base_nodes(self, exclude: List[Hex]) -> List[Hex]:
+        res = []
+        for node, cont in self.contents.items():
+            if cont == Content.BASE and node not in exclude:
+                res.append(node)
+        return res
 
     def __repr__(self):
-        return f"GameMap(size={self.size}, content={self.content}, vehicles={self.vehicles})"
+        return f"GameMap(size={self.size}, content={self.contents}, vehicles={self.vehicles})"

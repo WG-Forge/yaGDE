@@ -108,7 +108,7 @@ class Vehicle:
         #
         # <param name="path">Path to target</param>
         # <returns>Move target</returns>
-
+        
         if len(path) > self.speed:
             return path[self.speed]
         else:

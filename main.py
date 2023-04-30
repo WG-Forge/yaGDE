@@ -145,6 +145,7 @@ async def play():
         game.init_map(map_response)
 
         while True:
+            pygame.event.pump()
             game_state = handle_response(
                 await observer.session.game_state()
             )

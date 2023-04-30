@@ -58,9 +58,33 @@ class Engine():
         obstacles = self.game.get_obstacles_for(self.player_id)
         target = Hex(0, 0, 0)
 
+        # We should get all other vehicles except this one
+        other_vehicles = []
+        for node, veh in self.game.map.vehicles.items():
+            if veh.id == vehicle.id:
+                continue
+            other_vehicles.append(Hex(*veh.position))
+
+        exclude = []
+        for obst in obstacles:
+            exclude.append(obst)
+        for veh in other_vehicles:
+            exclude.append(veh)
+
+        # We should find closest base target that is reachable
+        base_nodes = self.game.map.get_base_nodes(exclude)
+        minDist = base_nodes[0].distance(vehicle.position)
+        target = base_nodes[0]
+        for node in base_nodes:
+            dist = node.distance(vehicle.position)
+            if dist < minDist:
+                target = node
+                minDist = dist
+
         path = self.path_finder.path(vehicle.position,
                                      target,
-                                     obstacles)
+                                     exclude)
+
         if path:
             move = vehicle.pick_move(path)
             self.__move(vehicle, move)
