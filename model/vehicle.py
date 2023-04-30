@@ -69,7 +69,7 @@ VEHICLE_SHOOTING_RANGE = {
 class Vehicle:
     def __init__(self, id: VehicleId, playerId: PlayerId,
                  typ: VehicleType, spawn: Hex,
-                 hp: int, position: Hex):
+                 hp: int, position: Hex, bonus: bool):
         self.id = id
         self.playerId = playerId
         self.type = typ
@@ -80,6 +80,7 @@ class Vehicle:
         self.shooting_range = VEHICLE_SHOOTING_RANGE[typ]
         self.position = position
         self.spawn = spawn
+        self.bonus = bool
 
     @staticmethod
     def from_vehicle_response(vid: ResponseVehicleId, vehicle: ResponseVehicle):
@@ -90,11 +91,14 @@ class Vehicle:
             spawn=Hex.from_hex_response(vehicle.spawn_position),
             hp=vehicle.health,
             position=Hex.from_hex_response(vehicle.position),
+            bonus=vehicle.shoot_range_bonus==1
         )
 
     def in_shooting_range(self, target: Hex, obstacles: List[Hex]) -> bool:
         dist = self.position.distance(target)
         rl, ru = self.shooting_range
+        if self.bonus:
+            ru += 1
         in_range = rl <= dist <= ru
 
         match self.type:
