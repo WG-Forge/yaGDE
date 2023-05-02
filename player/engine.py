@@ -54,6 +54,49 @@ class Engine():
 
         return False
 
+    def __decide_target(self, vehicle: Vehicle, exclude: List[Hex]) -> Hex:
+        target = Hex(0, 0, 0)
+        base_nodes = self.game.map.get_base_nodes(exclude)
+
+        # We should find closest base target that is reachable
+        if base_nodes is not None:
+            minDist = base_nodes[0].distance(vehicle.position)
+            target = base_nodes[0]
+
+            for node in base_nodes:
+                dist = node.distance(vehicle.position)
+                if dist < minDist:
+                    target = node
+                    minDist = dist
+
+        if vehicle.position not in base_nodes and vehicle.hp <= 1:
+            # Then we should make target closest repair only if it is closer than base
+
+            # So now let's find closest repair
+            if vehicle.type == VehicleType.MEDIUM_TANK:
+                repairs = self.game.map.get_light_repairs()
+            elif vehicle.type == VehicleType.HEAVY_TANK or vehicle.type == VehicleType.AT_SPG:
+                repairs = self.game.map.get_heavy_repairs()
+            else:
+                return target
+
+            if repairs is None:
+                return target
+            
+            temp = repairs[0]
+            minDist = vehicle.position.distance(temp)
+            for node in repairs:
+                dist = node.distance(vehicle.position)
+                if dist < minDist:
+                    temp = node
+                    minDist = dist
+            
+            # Now we should see if repair is closer than closest base node
+            if temp.distance(vehicle.position) <= target.distance(vehicle.position):
+                target = temp
+
+        return target
+
     def __move_vehicle(self, vehicle: Vehicle):
         obstacles = self.game.get_obstacles_for(self.player_id)
         target = Hex(0, 0, 0)
@@ -70,18 +113,8 @@ class Engine():
             exclude.append(obst)
         for veh in other_vehicles:
             exclude.append(veh)
-
-        # We should find closest base target that is reachable
-        base_nodes = self.game.map.get_base_nodes(exclude)
-        minDist = base_nodes[0].distance(vehicle.position)
-        if base_nodes is not None:
-            target = base_nodes[0]
-
-            for node in base_nodes:
-                dist = node.distance(vehicle.position)
-                if dist < minDist:
-                    target = node
-                    minDist = dist
+        
+        target = self.__decide_target(vehicle, exclude)
 
         path = self.path_finder.path(vehicle.position,
                                      target,
