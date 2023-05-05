@@ -17,10 +17,13 @@ class Node:
 
 
 class AStarPathfinding:
-    # Creates a new instance of AStarPathfinding.
-    #
-    # <param name="size">Size of the map.</param>
-    # <param name="center">Center of the map.</param>
+    '''
+    Creates a new instance of AStarPathfinding.
+    
+    <param name="size">Size of the map.</param>
+    <param name="center">Center of the map.</param>
+    '''
+
     def __init__(self, size: int = 10, center: Hex = Hex(0, 0, 0)):
         self.size = size
         self.center = center
@@ -36,7 +39,7 @@ class AStarPathfinding:
         return res
 
     def __closest_free_node_to_start(self, start: Hex, position: Hex, exclude: Set[Hex]) -> Hex:
-        # Result that should be returned if we found free node
+        '''Result that should be returned if we found free node'''
         closest = position
 
         minDist = start.distance(position) + 8
@@ -63,12 +66,15 @@ class AStarPathfinding:
             return self.__closest_free_node_to_start(start, closest, exclude)
         
 
-    # Finds path from given start point to end point. Returns an empty list if the path couldn't be found.
-    #
-    # <param name="start">Start Hex.</param>
-    # <param name="end">Destination Hex.</param>
-    # <param name="exclude">Excluded nodes from search.</param>
     def path(self, start: Hex, end: Hex, exclude: Set[Hex] = {}) -> List[Hex]:
+        '''
+        Finds path from given start point to end point. Returns an empty list if the path couldn't be found.
+        
+        <param name="start">Start Hex.</param>
+        <param name="end">Destination Hex.</param>
+        <param name="exclude">Excluded nodes from search.</param>
+        '''
+
         # If the start or end Hex is excluded - return an empty list.
         if start in exclude:
             return []

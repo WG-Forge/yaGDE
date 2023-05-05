@@ -9,19 +9,19 @@ from client.responses import *
 
 
 def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
-    """
+    '''
     Serialize an action to bytes.
     The format is:
     4 bytes: action type
     4 bytes: length of the JSON data
     n bytes: JSON data in UTF-8
-    """
+    '''
 
     def dictify(value) -> dict:
-        """
+        '''
         Convert a namedtuple to a dict recursively.
         Remove nones.
-        """
+        '''
         if hasattr(value, "_asdict"):
             return {k: dictify(v) for k, v in
                     value._asdict().items() if v is not None}
@@ -38,22 +38,22 @@ def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:
 
 
 def deserialize_response_header(data: bytes) -> tuple[ResponseCode, int]:
-    """
+    '''
     Deserialize the header of a response.
     The format is:
     4 bytes: response code
     4 bytes: length of the JSON data
-    """
+    '''
     c, l = struct.unpack("<II", data)
     return ResponseCode(c), l
 
 
 def deserialize_response_data(t: ActionType, data: bytes) -> ActionResponse | None:
-    """
+    '''
     Deserialize the data of a response.
     The format is:
     n bytes: JSON data in UTF-8
-    """
+    '''
     if len(data) == 0:
         return None
 
@@ -73,11 +73,11 @@ def deserialize_response_data(t: ActionType, data: bytes) -> ActionResponse | No
 
 
 def deserialize_error_response(c: ResponseCode, data: bytes) -> ErrorResponse:
-    """
+    '''
     Deserialize the data of an error response.
     The format is:
     n bytes: JSON data in UTF-8
-    """
+    '''
     data = data.decode("utf-8")
     data = json.loads(data)
 

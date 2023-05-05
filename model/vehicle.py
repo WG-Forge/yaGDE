@@ -108,10 +108,12 @@ class Vehicle:
                 return in_range
 
     def pick_move(self, path):
-        # Pick move target from path
-        #
-        # <param name="path">Path to target</param>
-        # <returns>Move target</returns>
+        '''
+        Pick move target from path
+        
+        <param name="path">Path to target</param>
+        <returns>Move target</returns>
+        '''
 
         if len(path) > self.speed:
             return path[self.speed]

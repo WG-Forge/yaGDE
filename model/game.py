@@ -11,16 +11,20 @@ class Game:
         self.turns = None
 
     def init_map(self, map_response: MapResponse):
-        # Initialize map from server MapResponse
-        #
-        # <param name="map_response">MapResponse from server</param>
+        '''
+        Initialize map from server MapResponse
+        
+        <param name="map_response">MapResponse from server</param>
+        '''
 
         self.map = GameMap.from_map_response(map_response)
 
     def update_state(self, state_response: GameStateResponse):
-        # Update map and players from server GameStateResponse
-        #
-        # <param name="state_response">GameStateResponse from server</param>
+        '''
+        Update map and players from server GameStateResponse
+        
+        <param name="state_response">GameStateResponse from server</param>
+        '''
 
         self.map.update_vehicles_from_state_response(state_response)
         self.players = [PlayerId(player.idx)
@@ -29,18 +33,22 @@ class Game:
                               for idx, matrix in state_response.attack_matrix.items()}
 
     def update_actions(self, actions: GameActionsResponse):
-        # Update actions from server GameActionsResponse
-        #
-        # <param name="actions">GameActionsResponse from server</param>
+        '''
+        Update actions from server GameActionsResponse
+
+        <param name="actions">GameActionsResponse from server</param>
+        '''
 
         self.actions = TurnActions.from_actions_response(actions)
 
     def check_neutrality(self, vehicle: Vehicle, enemy: Vehicle):
-        # Check if vehicle can attack enemy
-        #
-        # <param name="vehicle">Vehicle to check</param>
-        # <param name="enemy">Enemy to check</param>
-        # <returns>True if vehicle can attack enemy, False otherwise</returns>
+        '''
+        Check if vehicle can attack enemy
+        
+        <param name="vehicle">Vehicle to check</param>
+        <param name="enemy">Enemy to check</param>
+        <returns>True if vehicle can attack enemy, False otherwise</returns>
+        '''
 
         player_id = vehicle.playerId
         enemy_id = enemy.playerId
