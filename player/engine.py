@@ -40,7 +40,7 @@ class Engine():
 
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
-            in_range = vehicle.in_shooting_range(enemy.position)
+            in_range = vehicle.in_shooting_range(enemy.position, self.game.map.get_obstacles_for(self.player_id))
 
             if not can_attack or not in_range:
                 continue
@@ -54,13 +54,72 @@ class Engine():
 
         return False
 
+    def __decide_target(self, vehicle: Vehicle, exclude: List[Hex]) -> Hex:
+        target = Hex(0, 0, 0)
+        base_nodes = self.game.map.get_base_nodes(exclude)
+
+        # We should find closest base target that is reachable
+        if base_nodes is not None:
+            minDist = base_nodes[0].distance(vehicle.position)
+            target = base_nodes[0]
+
+            for node in base_nodes:
+                dist = node.distance(vehicle.position)
+                if dist < minDist:
+                    target = node
+                    minDist = dist
+
+        if vehicle.position not in base_nodes and vehicle.hp <= 1:
+            # Then we should make target closest repair only if it is closer than base
+
+            # So now let's find closest repair
+            if vehicle.type == VehicleType.MEDIUM_TANK:
+                repairs = self.game.map.get_light_repairs()
+            elif vehicle.type == VehicleType.HEAVY_TANK or vehicle.type == VehicleType.AT_SPG:
+                repairs = self.game.map.get_heavy_repairs()
+            else:
+                return target
+
+            if repairs is None:
+                return target
+            
+            temp = repairs[0]
+            minDist = vehicle.position.distance(temp)
+            for node in repairs:
+                dist = node.distance(vehicle.position)
+                if dist < minDist:
+                    temp = node
+                    minDist = dist
+            
+            # Now we should see if repair is closer than closest base node
+            if temp.distance(vehicle.position) <= target.distance(vehicle.position):
+                target = temp
+
+        return target
+
     def __move_vehicle(self, vehicle: Vehicle):
         obstacles = self.game.get_obstacles_for(self.player_id)
         target = Hex(0, 0, 0)
 
+        # We should get all other vehicles except this one
+        other_vehicles = []
+        for node, veh in self.game.map.vehicles.items():
+            if veh.id == vehicle.id:
+                continue
+            other_vehicles.append(Hex(*veh.position))
+
+        exclude = []
+        for obst in obstacles:
+            exclude.append(obst)
+        for veh in other_vehicles:
+            exclude.append(veh)
+        
+        target = self.__decide_target(vehicle, exclude)
+
         path = self.path_finder.path(vehicle.position,
                                      target,
-                                     obstacles)
+                                     exclude)
+    
         if path:
             move = vehicle.pick_move(path)
             self.__move(vehicle, move)

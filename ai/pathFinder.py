@@ -25,6 +25,44 @@ class AStarPathfinding:
         self.size = size
         self.center = center
 
+    def __closest_neighbor(position: Hex, start: Hex) -> Hex:
+        res = position
+        minDist = start.distance(position) + 8
+        for node in position.neighbors():
+            dist = start.distance(node)
+            if dist <= minDist:
+                res = node
+                minDist = dist
+        return res
+
+    def __closest_free_node_to_start(self, start: Hex, position: Hex, exclude: Set[Hex]) -> Hex:
+        # Result that should be returned if we found free node
+        closest = position
+
+        minDist = start.distance(position) + 8
+
+        # Boolean var for detecting if we found at least one free node
+        found = False
+
+        for node in position.neighbors():
+            if node not in exclude:
+                found = True
+
+                dist = start.distance(node)
+                if dist <= minDist:
+                    closest = node
+                    minDist = dist
+        
+        # If we found free node, than it's good
+        # If we didn't find free node, we should call this fun again to the closest node to start
+        if found:
+            return closest
+        else:
+            # Now closest is not free but it's used for argument for next call
+            closest = self.__closest_neighbor(position, start)
+            return self.__closest_free_node_to_start(start, closest, exclude)
+        
+
     # Finds path from given start point to end point. Returns an empty list if the path couldn't be found.
     #
     # <param name="start">Start Hex.</param>
@@ -32,8 +70,12 @@ class AStarPathfinding:
     # <param name="exclude">Excluded nodes from search.</param>
     def path(self, start: Hex, end: Hex, exclude: Set[Hex] = {}) -> List[Hex]:
         # If the start or end Hex is excluded - return an empty list.
-        if start in exclude or end in exclude:
+        if start in exclude:
             return []
+        if end in exclude:
+            end = self.__closest_free_node_to_start(start, end, exclude)
+            if end in exclude:
+                return []
 
         openNodes = {start: Node(start, end, 0, None)}
         closedNodes = dict()
