@@ -166,9 +166,6 @@ async def play():
             window.draw(game)
             window.update()
 
-            # Wait for a while
-            # await aio.sleep(1)
-
         logging.info(f"Winner: {game_state.winner}")
 
 if __name__ == "__main__":

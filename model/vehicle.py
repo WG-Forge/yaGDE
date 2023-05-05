@@ -68,16 +68,16 @@ VEHICLE_SHOOTING_RANGE = {
 
 class Vehicle:
     def __init__(self, id: VehicleId, playerId: PlayerId,
-                 typ: VehicleType, spawn: Hex,
+                 vehicle_type: VehicleType, spawn: Hex,
                  hp: int, position: Hex, bonus: bool):
         self.id = id
         self.playerId = playerId
-        self.type = typ
+        self.type = vehicle_type
         self.hp = hp
-        self.max_hp = VEHICLE_MAX_HP[typ]
-        self.speed = VEHICLE_SPEED_POINTS[typ]
-        self.damage = VEHICLE_DAMAGE_POINTS[typ]
-        self.shooting_range = VEHICLE_SHOOTING_RANGE[typ]
+        self.max_hp = VEHICLE_MAX_HP[vehicle_type]
+        self.speed = VEHICLE_SPEED_POINTS[vehicle_type]
+        self.damage = VEHICLE_DAMAGE_POINTS[vehicle_type]
+        self.shooting_range = VEHICLE_SHOOTING_RANGE[vehicle_type]
         self.position = position
         self.spawn = spawn
         self.bonus = bonus
@@ -87,7 +87,7 @@ class Vehicle:
         return Vehicle(
             id=VehicleId(vid),
             playerId=PlayerId(vehicle.player_id),
-            typ=VehicleType.from_reponse_vehicle_type(vehicle.vehicle_type),
+            vehicle_type=VehicleType.from_reponse_vehicle_type(vehicle.vehicle_type),
             spawn=Hex.from_hex_response(vehicle.spawn_position),
             hp=vehicle.health,
             position=Hex.from_hex_response(vehicle.position),

@@ -66,7 +66,7 @@ class AStarPathfinding:
             return self.__closest_free_node_to_start(start, closest, exclude)
         
 
-    def path(self, start: Hex, end: Hex, exclude: Set[Hex] = {}) -> List[Hex]:
+    def path(self, start: Hex, end: Hex, exclude: Set[Hex]) -> List[Hex]:
         '''
         Finds path from given start point to end point. Returns an empty list if the path couldn't be found.
         
@@ -88,7 +88,6 @@ class AStarPathfinding:
 
         # While there are still nodes to check.
         while len(openNodes) != 0:
-
             # Popping the node with the lowest F value.
             currentHex = min(openNodes, key=openNodes.get)
             currentNode = openNodes[currentHex]
@@ -116,9 +115,11 @@ class AStarPathfinding:
                 if neighborHex in closedNodes:
                     continue
 
-                neighborNode = Node(neighborHex, end,
-                                    currentNode.g + 1,
-                                    currentHex)
+                neighborNode = Node(
+                    neighborHex, end,
+                    currentNode.g + 1,
+                    currentHex
+                )
 
                 # If we discovered a new node or shorter path to an existing node - update the node.
                 if neighborHex not in openNodes or neighborNode < openNodes[neighborHex]:
