@@ -1,5 +1,5 @@
-from model.common import *
-from model.vehicle import *
+from model.common import PlayerId
+from model.vehicle import VehicleId
 from model.hex import Hex
 from client.responses import GameActionsResponse, GameAction
 

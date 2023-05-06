@@ -1,4 +1,5 @@
-from client.responses import *
+from client.responses import MapResponse, GameStateResponse, GameActionsResponse
+from model.vehicle import Vehicle
 from model.map import GameMap
 from model.common import PlayerId
 from model.action import TurnActions

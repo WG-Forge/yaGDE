@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import *
+from typing import NewType, Dict, List
 
 from client.responses import MapContent as ResponseContent
 

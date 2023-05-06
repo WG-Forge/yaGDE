@@ -1,11 +1,29 @@
-from typing import *
 import json
 import struct
 import asyncio as aio
 import logging as log
 
-from client.actions import *
-from client.responses import *
+from typing import Optional
+
+from client.common import ProtocolAction, ActionType, GameAction
+
+from client.actions import (
+    Action, 
+    LoginAction, 
+    ChatAction, 
+    MoveAction, 
+    ShootAction
+)
+
+from client.responses import (
+    ResponseCode, 
+    ActionResponse, 
+    LoginResponse, 
+    MapResponse, 
+    GameStateResponse, 
+    GameActionsResponse, 
+    ErrorResponse
+)
 
 
 def serialize_action(t: ActionType, action: Optional[Action] = None) -> bytes:

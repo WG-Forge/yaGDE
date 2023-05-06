@@ -1,11 +1,11 @@
-from typing import *
+from ai.pathFinder import AStarPathfinding
+from model.hex import Hex
+from model.game import Game
+from model.vehicle import Vehicle, VehicleType
+from model.common import PlayerId
+from model.action import ShootAction, MoveAction
 
-from ai.pathFinder import *
-from model.hex import *
-from model.game import *
-from model.vehicle import *
-from model.common import *
-from model.action import *
+from typing import List
 
 
 VEHICLE_TURN_ORDER = [

@@ -1,15 +1,32 @@
 import pygame
-from math import *
+from math import cos, sqrt, pi
 from pygame.math import Vector2
 from pygame.surface import Surface
 
-from model.hex import *
-from model.map import *
-from model.game import *
-from model.common import *
-from model.vehicle import *
-from graphics.utils import *
-from graphics.constants import *
+from model.common import Content
+from model.game import Game
+from model.vehicle import Vehicle, VehicleType
+from model.hex import Hex, hexes_range
+
+from graphics.utils import (
+    even_cuts, 
+    hex_center, 
+    grouped, 
+    hex_size, 
+    regular_polygon_corners
+)
+
+from graphics.constants import (
+    ARROW_WIDTH, 
+    CONTENT_COLORS, 
+    DRAW_SURFACE_SIZE, 
+    PLAYERS_COLORS, 
+    SPAWN_COLOR, 
+    MOVE_COLOR, 
+    SHOOT_COLOR, 
+    GRID_COLOR, 
+    GRID_WIDTH
+)
 
 
 class HexSurface:

@@ -1,5 +1,5 @@
-from typing import *
-from model.hex import *
+from typing import Set, List
+from model.hex import Hex
 
 
 class Node:

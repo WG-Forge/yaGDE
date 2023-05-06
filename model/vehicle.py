@@ -1,10 +1,12 @@
-from typing import *
+from typing import NewType, List
+from enum import Enum
 
 from model.hex import Hex
-from model.common import *
+from model.common import PlayerId
 from client.responses import Vehicle as ResponseVehicle
 from client.common import VehicleId as ResponseVehicleId
 from client.responses import VehicleType as ResponseVehicleType
+
 
 VehicleId = NewType('VehicleId', int)
 

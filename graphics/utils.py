@@ -1,7 +1,7 @@
-from math import *
+from math import sqrt, pi
 from pygame.math import Vector2
 
-from model.hex import *
+from model.hex import Hex
 
 
 def hex_size(width: int, height: int, map_size: int) -> float:

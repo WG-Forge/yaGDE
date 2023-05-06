@@ -1,4 +1,4 @@
-from typing import *
+from typing import NamedTuple, List, Set
 from itertools import permutations
 
 from client.common import Hex as ResponseHex

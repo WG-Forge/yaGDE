@@ -1,7 +1,8 @@
-from typing import *
+from model.common import Content, PlayerId
+from model.vehicle import Vehicle, VehicleId, VehicleType
+from model.hex import Hex
 
-from model.common import *
-from model.vehicle import *
+from typing import Dict, List
 from client.responses import MapResponse, GameStateResponse
 
 
