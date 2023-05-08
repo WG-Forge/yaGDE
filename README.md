@@ -1,25 +1,50 @@
 # Yet Another Game Development Entity
 
+Implementation of client for turn-based hexagonal-map game about tank battles. Game is final project for WG Forge SE course. Client is equipped with game AI and GUI.
+
 ## Team members
-Mikhail Vorobev - https://github.com/InversionSpaces
-<br/>
-Aleksa Ristić - https://github.com/NORT0X
-<br/>
-Aleksandar Marinković - https://github.com/AkiMar1510
 
-## Description
-Program that connect one or more bots to the game server which WGForge team provided. Bot (or more of them) runs in loop and moves his vehicles accordingly.
+- [Mikhail Vorobev](https://github.com/InversionSpaces)
 
-## How to run application
-You can run application through terminal with "py main.py" command.
-<br/>
-If you don't have installed pygame or python. You should first install python than in terminal run "pip install pygame"
-<br/>
+- [Aleksa Ristić](https://github.com/NORT0X)
 
-## Requirements for running application:
-Python 3.x
-<br/>
-Pygame
+- [Aleksandar Marinković](https://github.com/AkiMar1510)
 
-## Modules
-...
+## Requirements
+
+- `python >= 3.11` 
+- `pygame`
+
+## Installing
+
+```sh
+python3 -m pip install -r requirements.txt
+```
+
+## Running
+
+```sh
+python3 main.py
+```
+
+Login details, number of bots started and GUI parameters could be modified in `main.py`.
+
+**TODO**: add cli parameters for that.
+
+## Running tests
+
+```sh
+python -m unittest discover -s tests
+```
+
+## Project structure
+
+- `client` - implementation of a client for the game server
+  (`session.py` contains primary `Session` class)
+- `model` - internal game model for implementation of AI
+- `ai` - utils for AI implementation
+- `player` - implementation of AI engine
+  (`engine.py` contains primary `Engine` class)
+- `graphics` - implementation of GUI
+  (`window.py` contains primary `Window` class)
+- `tests` - unit tests
