@@ -1,4 +1,5 @@
 import pygame
+import os
 from math import cos, sqrt, pi
 from pygame.math import Vector2
 from pygame.surface import Surface
@@ -7,6 +8,8 @@ from model.common import Content
 from model.game import Game
 from model.vehicle import Vehicle, VehicleType
 from model.hex import Hex, hexes_range
+
+from client.responses import GameStateResponse
 
 from graphics.utils import (
     even_cuts, 
@@ -25,7 +28,10 @@ from graphics.constants import (
     MOVE_COLOR, 
     SHOOT_COLOR, 
     GRID_COLOR, 
-    GRID_WIDTH
+    GRID_WIDTH,
+    BACKGROUND_COLOR,
+    TEXT_COLOR_BLACK,
+    WINNER_COLOR
 )
 
 
@@ -261,6 +267,36 @@ class Window:
             self.__draw_arrow(vehicle.position, shoot.target, SHOOT_COLOR)
 
         self.__flush()
+
+    def end(self, state: GameStateResponse):
+        '''Drawing end screen'''
+        run = True
+        while run:
+            pygame.time.delay(100)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+                    pygame.quit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    run = False
+
+            # Take winnners nickname
+            w_name = ""
+            for player in  state.players:
+                if state.winner == player.idx:
+                    w_name = player.name
+
+            self.screen.fill(BACKGROUND_COLOR)
+
+            largeFont = pygame.font.SysFont('malgungothic', 80, True)
+            winner_tittle = largeFont.render('WINNER', 1, WINNER_COLOR)
+            winner_name = largeFont.render(w_name, 1, WINNER_COLOR)
+            smallFont = pygame.font.SysFont('malgungothic', 50)
+            tip = smallFont.render('Click anywhere on window to quit.', 1, TEXT_COLOR_BLACK)
+            self.screen.blit(winner_tittle, (self.width/2 - winner_tittle.get_width()/2, 240))
+            self.screen.blit(winner_name, (self.width/2 - winner_name.get_width()/2, 400))
+            self.screen.blit(tip, (self.width/2 - tip.get_width()/2, 600))
+            self.update()
 
     def __flush(self):
         screen_rect = self.screen.get_rect()

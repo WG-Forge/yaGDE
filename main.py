@@ -154,6 +154,7 @@ async def play():
 
             if game_state.finished:
                 await aio.sleep(1)
+                window.end(game_state)
                 break
 
             await make_turns(sessions, game_state.current_player_idx, game)
