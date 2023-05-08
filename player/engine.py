@@ -1,11 +1,11 @@
-from typing import *
+from ai.pathFinder import AStarPathfinding
+from model.hex import Hex
+from model.game import Game
+from model.vehicle import Vehicle, VehicleType
+from model.common import PlayerId
+from model.action import ShootAction, MoveAction
 
-from ai.pathFinder import *
-from model.hex import *
-from model.game import *
-from model.vehicle import *
-from model.common import *
-from model.action import *
+from typing import List
 
 
 VEHICLE_TURN_ORDER = [
@@ -40,7 +40,10 @@ class Engine():
 
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
-            in_range = vehicle.in_shooting_range(enemy.position, self.game.map.get_obstacles_for(self.player_id))
+            in_range = vehicle.in_shooting_range(
+                enemy.position, 
+                self.game.map.get_obstacles_for(self.player_id)
+            )
 
             if not can_attack or not in_range:
                 continue
@@ -116,9 +119,11 @@ class Engine():
         
         target = self.__decide_target(vehicle, exclude)
 
-        path = self.path_finder.path(vehicle.position,
-                                     target,
-                                     exclude)
+        path = self.path_finder.path(
+            vehicle.position,
+            target,
+            exclude
+        )
     
         if path:
             move = vehicle.pick_move(path)

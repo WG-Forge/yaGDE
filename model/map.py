@@ -1,7 +1,8 @@
-from typing import *
+from model.common import Content, PlayerId
+from model.vehicle import Vehicle, VehicleId, VehicleType
+from model.hex import Hex
 
-from model.common import *
-from model.vehicle import *
+from typing import Dict, List
 from client.responses import MapResponse, GameStateResponse
 
 
@@ -13,9 +14,11 @@ class GameMap:
 
     @staticmethod
     def from_map_response(map_response: MapResponse):
-        # Create GameMap from server MapResponse
-        #
-        # <param name="map_response">MapResponse from server</param>
+        '''
+        Create GameMap from server MapResponse
+        
+        <param name="map_response">MapResponse from server</param>
+        '''
 
         contents = {
             Hex.from_hex_response(hex): Content.from_content_response(content)
@@ -26,9 +29,11 @@ class GameMap:
         return GameMap(map_response.size, contents)
 
     def update_vehicles_from_state_response(self, state_response: GameStateResponse):
-        # Update vehicles from server GameStateResponse
-        #
-        # <param name="state_response">GameStateResponse from server</param>
+        '''
+        Update vehicles from server GameStateResponse
+        
+        <param name="state_response">GameStateResponse from server</param>
+        '''
 
         self.vehicles = {
             Hex.from_hex_response(vehicle.position): Vehicle.from_vehicle_response(vid, vehicle)
@@ -36,17 +41,21 @@ class GameMap:
         }
 
     def get_spawn_points(self) -> List[Hex]:
-        # Get spawn points
-        #
-        # <returns>List of spawn points</returns>
+        '''
+        Get spawn points
+        
+        <returns>List of spawn points</returns>
+        '''
 
         return [vehicle.spawn for vehicle in self.vehicles.values()]
 
     def at(self, hex: Hex) -> Content | Vehicle | None:
-        # Get content or vehicle at hex
-        #
-        # <param name="hex">Hex to get content or vehicle at</param>
-        # <returns>Content or vehicle at hex or None if there is none</returns>
+        '''
+        Get content or vehicle at hex
+        
+        <param name="hex">Hex to get content or vehicle at</param>
+        <returns>Content or vehicle at hex or None if there is none</returns>
+        '''
 
         if hex in self.vehicles:
             return self.vehicles[hex]
@@ -55,10 +64,12 @@ class GameMap:
         return None
 
     def vehicle_by(self, id: VehicleId) -> Vehicle | None:
-        # Get vehicle by id
-        #
-        # <param name="id">Vehicle id</param>
-        # <returns>Vehicle with id or None if there is none</returns>
+        '''
+        Get vehicle by id
+        
+        <param name="id">Vehicle id</param>
+        <returns>Vehicle with id or None if there is none</returns>
+        '''
 
         # TODO: This is O(n) and should be O(1)
         for vehicle in self.vehicles.values():
@@ -68,10 +79,12 @@ class GameMap:
         return None
 
     def get_vehicles_for(self, player_id: PlayerId) -> Dict[VehicleType, List[Vehicle]]:
-        # Get vehicles for player
-        #
-        # <param name="player_id">Player id</param>
-        # <returns>Dictionary of vehicle type to list of vehicles</returns>
+        '''
+        Get vehicles for player
+        
+        <param name="player_id">Player id</param>
+        <returns>Dictionary of vehicle type to list of vehicles</returns>
+        '''
 
         vehicles = {}  # type: Dict[VehicleType, List[Vehicle]]
         for vehicle in self.vehicles.values():
@@ -86,10 +99,12 @@ class GameMap:
         return vehicles
 
     def get_enemy_vehicles_for(self, player_id: PlayerId) -> List[Vehicle]:
-        # Get enemy vehicles for player
-        #
-        # <param name="player_id">Player id</param>
-        # <returns>List of enemy vehicles</returns>
+        '''
+        Get enemy vehicles for player
+        
+        <param name="player_id">Player id</param>
+        <returns>List of enemy vehicles</returns>
+        '''
 
         return [
             vehicle
@@ -98,10 +113,12 @@ class GameMap:
         ]
 
     def get_obstacles_for(self, player_id: PlayerId) -> List[Hex]:
-        # Get obstacles for player, i.e. hexes vahicles cannot move through
-        #
-        # <param name="player_id">Player id</param>
-        # <returns>List of obstacles</returns>
+        '''
+        Get obstacles for player, i.e. hexes vahicles cannot move through
+        
+        <param name="player_id">Player id</param>
+        <returns>List of obstacles</returns>
+        '''
 
         # Are enemy vehicles obstacles?
         return [hex for hex, content in self.contents.items()

@@ -1,7 +1,7 @@
-from typing import *
+from typing import Optional, NamedTuple
 
 
-from client.common import *
+from client.common import Hex, VehicleId
 
 
 class LoginAction(NamedTuple):

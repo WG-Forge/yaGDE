@@ -1,4 +1,4 @@
-from typing import *
+from typing import NamedTuple, List, Set
 from itertools import permutations
 
 from client.common import Hex as ResponseHex
@@ -16,9 +16,11 @@ class Hex(NamedTuple):
         return Hex(self.q - other.q, self.r - other.r, self.s - other.s)
 
     def distance(self, other=None):
-        # Returns the distance between two hexes.
-        #
-        # <param name="other">Other hex.</param>
+        '''
+        Returns the distance between two hexes.
+        
+        <param name="other">Other hex.</param>
+        '''
 
         if other is None:
             other = Hex(0, 0, 0)
@@ -26,25 +28,31 @@ class Hex(NamedTuple):
         return sum(map(abs, self - other)) // 2
 
     def neighbors(self, dist: int = 1):
-        # Returns the neighbors of the hex.
-        #
-        # <param name="dist">Distance from the hex to return neighbors at.</param>
+        '''
+        Returns the neighbors of the hex.
+        
+        <param name="dist">Distance from the hex to return neighbors at.</param>
+        '''
 
         for diff in hexes_at(dist):
             yield self + diff
 
     def range(self, *args):
-        # Returns the hexes in the given range.
-        #
-        # <param name="args">Range to return hexes in.</param>
+        '''
+        Returns the hexes in the given range.
+        
+        <param name="args">Range to return hexes in.</param>
+        '''
 
         for diff in hexes_range(*args):
             yield self + diff
 
     def on_line(self, other, obstacles):
-        # Returns if this hex is one one line with the other.
-        #
-        # <param name="other">Other hex.</param>
+        '''
+        Returns if this hex is one one line with the other and if there i obstacle between them.
+        
+        <param name="other">Other hex.</param>
+        '''
 
         if self.q == other.q or self.r == other.r or self.s == other.s:
             # Yes enemy is in range but let's check if there is obstacle between them
@@ -60,9 +68,11 @@ class Hex(NamedTuple):
 
 
 def hexes_at(dist: int = 0):
-    # Returns the hexes at the given distance from the origin.
-    #
-    # <param name="dist">Distance from the origin.</param>
+    '''
+    Returns the hexes at the given distance from the origin.
+    
+    <param name="dist">Distance from the origin.</param>
+    '''
 
     indexes = {0, 1, 2}
     result = set()
@@ -80,9 +90,11 @@ def hexes_at(dist: int = 0):
 
 
 def hexes_range(*args):
-    # Return hexes in the given range of distances from the origin.
-    #
-    # <param name="args">Range to return hexes in.</param>
+    '''
+    Return hexes in the given range of distances from the origin.
+    
+    <param name="args">Range to return hexes in.</param>
+    '''
 
     for dist in range(*args):
         for hex in hexes_at(dist):
@@ -90,6 +102,8 @@ def hexes_range(*args):
 
 
 def is_obstacle_betweenX(my_vehicle_position: Hex, enemy_vehicle_position: Hex, obstacles: List[Hex]) -> bool:
+    '''Function that gives True if there is obstacle between my_vehicle_position and enemy_vehicle_position on x axis'''
+
     # There are 3 options for searching obstacles between
     if my_vehicle_position.q == enemy_vehicle_position.q:
         # Take lower coordinates for starting search
@@ -108,6 +122,8 @@ def is_obstacle_betweenX(my_vehicle_position: Hex, enemy_vehicle_position: Hex, 
     return False
 
 def is_obstacle_betweenY(my_vehicle_position: Hex, enemy_vehicle_position: Hex, obstacles: List[Hex]) -> bool:
+    '''Function that gives True if there is obstacle between my_vehicle_position and enemy_vehicle_position on y axis'''
+
     # The rest are same, just different coordinates
     if my_vehicle_position.r == enemy_vehicle_position.r:
         # Take lower coordinates for starting search
@@ -126,6 +142,8 @@ def is_obstacle_betweenY(my_vehicle_position: Hex, enemy_vehicle_position: Hex, 
     return False
 
 def is_obstacle_betweenZ(my_vehicle_position: Hex, enemy_vehicle_position: Hex, obstacles: List[Hex]) -> bool:
+    '''Function that gives True if there is obstacle between my_vehicle_position and enemy_vehicle_position on z axis'''
+
     if my_vehicle_position.s == enemy_vehicle_position.s:
         # Take lower coordinates for starting search
         j = my_vehicle_position.q+1 if my_vehicle_position.q < enemy_vehicle_position.q else enemy_vehicle_position.q+1

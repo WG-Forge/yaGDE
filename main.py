@@ -131,7 +131,8 @@ async def play():
     num_of_players = 3
     game_name = f"yagde-test-game-{time.time()}"
 
-    window = Window(1400, 1200, "YAGDE")
+    window_info = pygame.display.Info()
+    window = Window(window_info.current_w, window_info.current_h, "YAGDE")
     game = Game()
 
     async with AsyncExitStack() as stack:
@@ -165,9 +166,6 @@ async def play():
 
             window.draw(game)
             window.update()
-
-            # Wait for a while
-            await aio.sleep(1)
 
         logging.info(f"Winner: {game_state.winner}")
 

@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import *
+from typing import NewType, NamedTuple
 
 
 PlayerId = NewType("PlayerId", int)

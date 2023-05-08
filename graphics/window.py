@@ -1,44 +1,68 @@
 import pygame
-from math import *
+from math import cos, sqrt, pi
 from pygame.math import Vector2
 from pygame.surface import Surface
 
-from model.hex import *
-from model.map import *
-from model.game import *
-from model.common import *
-from model.vehicle import *
-from graphics.utils import *
+from model.common import Content
+from model.game import Game
+from model.vehicle import Vehicle, VehicleType
+from model.hex import Hex, hexes_range
+
+from graphics.utils import (
+    even_cuts, 
+    hex_center, 
+    grouped, 
+    hex_size, 
+    regular_polygon_corners
+)
+
+from graphics.constants import (
+    ARROW_WIDTH, 
+    CONTENT_COLORS, 
+    DRAW_SURFACE_SIZE, 
+    PLAYERS_COLORS, 
+    SPAWN_COLOR, 
+    MOVE_COLOR, 
+    SHOOT_COLOR, 
+    GRID_COLOR, 
+    GRID_WIDTH
+)
 
 
 class HexSurface:
-    # Surface of a single hexagon.
-
+    '''Surface of a single hexagon.'''
+    
     def __init__(self, surface: Surface, size: float):
-        # <param name="surface">Surface to draw on.</param>
-        # <param name="size">Size of a hexagon.</param>
-        # Note: surface is bigger than the hexagon itself
-
+        '''
+        <param name="surface">Surface to draw on.</param>
+        <param name="size">Size of a hexagon.</param>
+        Note: surface is bigger than the hexagon itself
+        '''
+        
         self.surface = surface
         self.size = size
         self.width = size * 2
         self.height = size * sqrt(3)
 
     def draw_hex(self, color, width=0):
-        # Draws a hexagon with the given color and width.
-        #
-        # <param name="color">Color of the hexagon.</param>
-        # <param name="width">Width of the hexagon.</param>
+        '''
+        Draws a hexagon with the given color and width.
+        
+        <param name="color">Color of the hexagon.</param>
+        <param name="width">Width of the hexagon.</param>
+        '''
 
         self.draw_regular_polygon(color, 6, width)
 
     def __regular_polygon_corners(self, sides, factor=1, angle=0):
-        # Calculates corners of a regular polygon
-        #
-        # <param name="sides">Number of sides of the polygon.</param>
-        # <param name="factor">Factor to scale the polygon by (relative to self.size).</param>
-        # <param name="angle">Angle to rotate the polygon by.</param>
-
+        '''
+        Calculates corners of a regular polygon
+        
+        <param name="sides">Number of sides of the polygon.</param>
+        <param name="factor">Factor to scale the polygon by (relative to self.size).</param>
+        <param name="angle">Angle to rotate the polygon by.</param>
+        '''
+        
         center = self.surface.get_rect().center
         corners = regular_polygon_corners(sides, self.size * factor, angle)
 
@@ -57,25 +81,29 @@ class HexSurface:
         pygame.draw.rect(self.surface, color, rect)
 
     def draw_regular_polygon(self, color, sides, width=0, factor=1, angle=0):
-        # Draws a regular polygon with the given color and width.
-        #
-        # <param name="color">Color of the polygon.</param>
-        # <param name="sides">Number of sides of the polygon.</param>
-        # <param name="width">Width of the polygon.</param>
-        # <param name="factor">Factor to scale the polygon by (relative to self.size).</param>
-        # <param name="angle">Angle to rotate the polygon by.</param>
+        '''
+        Draws a regular polygon with the given color and width.
+        
+        <param name="color">Color of the polygon.</param>
+        <param name="sides">Number of sides of the polygon.</param>
+        <param name="width">Width of the polygon.</param>
+        <param name="factor">Factor to scale the polygon by (relative to self.size).</param>
+        <param name="angle">Angle to rotate the polygon by.</param>
+        '''
 
         points = self.__regular_polygon_corners(sides, factor, angle)
 
         pygame.draw.polygon(self.surface, color, points, width)
 
     def draw_lined_diamond(self, color, factor=1, num_lines: int = 0):
-        # Draws a lined diamond with the given color and width.
-        #
-        # <param name="color">Color of the diamond.</param>
-        # <param name="factor">Factor to scale the diamond by (relative to self.size).</param>
-        # <param name="num_lines">Number of lines to draw in the diamond.</param>
-
+        '''
+        Draws a lined diamond with the given color and width.
+        
+        <param name="color">Color of the diamond.</param>
+        <param name="factor">Factor to scale the diamond by (relative to self.size).</param>
+        <param name="num_lines">Number of lines to draw in the diamond.</param>
+        '''
+        
         points = self.__regular_polygon_corners(4, factor)
 
         right = even_cuts(points[0], points[1], 2 * num_lines)
@@ -87,21 +115,14 @@ class HexSurface:
             pygame.draw.polygon(self.surface, color, points, 0)
 
 
-CONTENT_COLORS = {
-    Content.BASE: (0, 255, 0, 128),
-    Content.OBSTACLE: (0, 0, 0),
-    Content.LIGHT_REPAIR: (128, 255, 0, 128),
-    Content.HARD_REPAIR: (255, 128, 0, 128),
-    Content.CATAPULT: (0, 0, 255, 128)
-}
-
-
 class ContentDraw:
-    # Draws a content on a hexagon.
+    ''' Draws a content on a hexagon.'''
 
     def __init__(self, surf: HexSurface, content: Content):
-        # <param name="surf">Hex Surface to draw on.</param>
-        # <param name="content">Content to draw.</param>
+        '''
+        <param name="surf">Hex Surface to draw on.</param>
+        <param name="content">Content to draw.</param>
+        '''
 
         self.surf = surf
         self.content = content
@@ -112,12 +133,14 @@ class ContentDraw:
 
 
 class VehicleDraw:
-    # Draws a vehicle on a hexagon.
-
+    '''Draws a vehicle on a hexagon.'''
+    
     def __init__(self, surf: HexSurface, vehicle: Vehicle, color):
-        # <param name="surf">Hex Surface to draw on.</param>
-        # <param name="vehicle">Vehicle to draw.</param>
-
+        '''
+        <param name="surf">Hex Surface to draw on.</param>
+        <param name="vehicle">Vehicle to draw.</param>
+        '''
+        
         self.surf = surf
         self.vehicle = vehicle
         self.color = color
@@ -166,34 +189,16 @@ class VehicleDraw:
         self.__draw_hp()
 
 
-PLAYERS_COLORS = [
-    (128, 0, 32),
-    (255, 128, 0),
-    (0, 128, 128),
-    (128, 0, 128),
-    (64, 0, 128)
-]
-
-SPAWN_COLOR = (255, 128, 64, 128)
-
-GRID_COLOR = (0, 0, 0)
-GRID_WIDTH = 5
-
-MOVE_COLOR = (64, 64, 255, 200)
-SHOOT_COLOR = (255, 0, 0, 200)
-ARROW_WIDTH = 15
-
-DRAW_SURFACE_SIZE = 3840
-
-
 class Window:
-    # Window to draw the game on.
-
+    '''Window to draw the game on.'''
+    
     def __init__(self, width, height, title):
-        # <param name="width">Width of the window.</param>
-        # <param name="height">Height of the window.</param>
-        # <param name="title">Title of the window.</param>
-
+        '''
+        <param name="width">Width of the window.</param>
+        <param name="height">Height of the window.</param>
+        <param name="title">Title of the window.</param>
+        '''
+        
         self.width = width
         self.height = height
         self.title = title
@@ -205,9 +210,11 @@ class Window:
         pygame.display.set_caption(self.title)
 
     def draw(self, game: Game):
-        # Draws the game map on the window.
-        #
-        # <param name="game">Game to draw.</param>
+        '''
+        Draws the game map on the window.
+        
+        <param name="game">Game to draw.</param>
+        '''
 
         game_map = game.map
         players_colors = dict(
@@ -270,23 +277,29 @@ class Window:
         self.screen.blit(result, result_rect)
 
     def update(self):
-        # Updates the window.
-        # This should be called after each draw.
-
+        '''
+        Updates the window.
+        This should be called after each draw.
+        '''
+        
         pygame.display.update()
 
     def __hex_center(self, hex: Hex) -> Vector2:
-        # Calculates the center of a hexagon.
-        #
-        # <param name="hex">Hexagon to calculate the center of.</param>
-
+        '''
+        Calculates the center of a hexagon.
+        
+        <param name="hex">Hexagon to calculate the center of.</param>
+        '''
+        
         return hex_center(hex, self.hex_size) + Vector2(self.surface.get_width(), self.surface.get_height()) / 2
 
     def __hex_subsurface(self, hex: Hex) -> HexSurface:
-        # Creates a subsurface for a hexagon.
-        #
-        # <param name="hex">Hexagon to create the subsurface for.</param>
-        # <param name="size">Size of the hexagon.</param>
+        '''
+        Creates a subsurface for a hexagon.
+        
+        <param name="hex">Hexagon to create the subsurface for.</param>
+        <param name="size">Size of the hexagon.</param>
+        '''
 
         center = self.__hex_center(hex)
 
@@ -306,20 +319,24 @@ class Window:
         return HexSurface(surface, self.hex_size)
 
     def __draw_grid(self, map_size: int):
-        # Draws the grid on the window.
-        #
-        # <param name="map_size">Size of the map.</param>
+        '''
+        Draws the grid on the window.
+        
+        <param name="map_size">Size of the map.</param>
+        '''
 
         for hex in hexes_range(map_size):
             surf = self.__hex_subsurface(hex)
             surf.draw_hex(GRID_COLOR, GRID_WIDTH)
 
     def __draw_arrow(self, start: Hex, end: Hex, color):
-        # Draws an arrow from one hex to another.
-        #
-        # <param name="start">Hex to draw the arrow from.</param>
-        # <param name="end">Hex to draw the arrow to.</param>
-
+        '''
+        Draws an arrow from one hex to another.
+        
+        <param name="start">Hex to draw the arrow from.</param>
+        <param name="end">Hex to draw the arrow to.</param>
+        '''
+        
         angle = pi / 4
 
         back = self.__hex_center(start)

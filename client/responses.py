@@ -1,7 +1,17 @@
-from typing import *
+from typing import List, Dict, Optional, NamedTuple
 from enum import Enum
 
-from client.common import *
+from client.common import (
+    PlayerId, 
+    Hex, 
+    enum_from_json, 
+    VehicleId, 
+    GameAction, 
+    IntEnum, 
+    ActionType, 
+    ProtocolAction
+)
+
 from client.actions import ChatAction, MoveAction, ShootAction
 
 
