@@ -14,12 +14,11 @@ from model.common import PlayerId
 from model.action import MoveAction, ShootAction
 from graphics.window import Window
 
+from info import WINDOW_NAME, SERVER_ADDR, SERVER_PORT, game_name, num_of_players
+
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     level=logging.INFO)
-
-SERVER_ADDR = "wgforge-srv.wargaming.net"
-SERVER_PORT = 443
 
 
 def handle_response(resp):
@@ -101,7 +100,6 @@ async def make_turns(sessions: Sessions, current_player_idx: ClientPlayerId, gam
 
             actions = engine.make_turn()
             for action in actions:
-                # TODO: Some actions fail (eg occupied hex in move), FIX IT
                 await send_action(player.session, action)
 
             turn = turns.create_task(player.session.turn())
@@ -128,11 +126,8 @@ async def make_turns(sessions: Sessions, current_player_idx: ClientPlayerId, gam
 
 
 async def play():
-    num_of_players = 3
-    game_name = f"yagde-test-game-{time.time()}"
-
     window_info = pygame.display.Info()
-    window = Window(window_info.current_w, window_info.current_h, "YAGDE")
+    window = Window(window_info.current_w, window_info.current_h, WINDOW_NAME)
     game = Game()
 
     async with AsyncExitStack() as stack:
@@ -146,7 +141,7 @@ async def play():
         game.init_map(map_response)
 
         while True:
-            pygame.event.pump()
+            pygame.event.clear()
             game_state = handle_response(
                 await observer.session.game_state()
             )
@@ -154,7 +149,12 @@ async def play():
 
             if game_state.finished:
                 await aio.sleep(1)
-                window.end(game_state)
+                w_name = ""
+                for player in  game_state.players:
+                    if game_state.winner == player.idx:
+                        w_name = player.name
+
+                window.end(w_name)
                 break
 
             await make_turns(sessions, game_state.current_player_idx, game)

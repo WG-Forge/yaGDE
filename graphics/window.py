@@ -268,7 +268,7 @@ class Window:
 
         self.__flush()
 
-    def end(self, state: GameStateResponse):
+    def end(self, w_name: str):
         '''Drawing end screen'''
         run = True
         while run:
@@ -279,12 +279,6 @@ class Window:
                     pygame.quit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     run = False
-
-            # Take winnners nickname
-            w_name = ""
-            for player in  state.players:
-                if state.winner == player.idx:
-                    w_name = player.name
 
             self.screen.fill(BACKGROUND_COLOR)
 
