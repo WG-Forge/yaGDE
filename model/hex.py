@@ -49,7 +49,7 @@ class Hex(NamedTuple):
 
     def on_line(self, other, obstacles):
         '''
-        Returns if this hex is one one line with the other and if there i obstacle between them.
+        Returns if this hex is one one line with the other and if there is obstacle between them.
         
         <param name="other">Other hex.</param>
         '''

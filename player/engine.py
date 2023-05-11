@@ -26,8 +26,20 @@ class Engine():
         self.path_finder = AStarPathfinding(game.map.size)
 
     def __shoot(self, vehicle: Vehicle, enemy: Vehicle):
+        target = None
+        if vehicle.type == VehicleType.AT_SPG:
+            # Fix for problem of AT_SPG because he can only shoot on neighbour hexs
+            # We should just find closest neighbour
+            minDist = None
+            for neighbour in vehicle.position.neighbors():
+                dist = neighbour.distance(enemy.position)
+                if minDist is None or minDist > dist:
+                    minDist = dist
+                    target = neighbour
+        else:
+            target = enemy.position
         self.actions.append(
-            ShootAction(self.player_id, vehicle.id, enemy.position)
+            ShootAction(self.player_id, vehicle.id, target)
         )
 
     def __move(self, vehicle: Vehicle, target: Hex):
@@ -48,7 +60,7 @@ class Engine():
             if not can_attack or not in_range:
                 continue
 
-            if target is None or target.hp < enemy.hp:
+            if target is None or target.hp > enemy.hp:
                 target = enemy
 
         if target is not None:
@@ -96,7 +108,19 @@ class Engine():
             
             # Now we should see if repair is closer than closest base node
             if temp.distance(vehicle.position) <= target.distance(vehicle.position):
-                target = temp
+                return temp
+        
+        if vehicle.position in base_nodes:
+            # If you are already in base go to the closest next base node
+            minDist = None
+
+            for node in base_nodes:
+                if node == vehicle.position:
+                    continue
+                dist = node.distance(vehicle.position)
+                if minDist is None or dist < minDist:
+                    target = node
+                    minDist = dist
 
         return target
 
@@ -109,7 +133,7 @@ class Engine():
         for node, veh in self.game.map.vehicles.items():
             if veh.id == vehicle.id:
                 continue
-            other_vehicles.append(Hex(*veh.position))
+            other_vehicles.append(node)
 
         exclude = []
         for obst in obstacles:
@@ -122,11 +146,29 @@ class Engine():
         path = self.path_finder.path(
             vehicle.position,
             target,
-            exclude
+            exclude,
+            vehicle.speed
         )
-    
-        if path:
-            move = vehicle.pick_move(path)
+
+        if len(path) > 1:
+            #move = vehicle.pick_move(path)
+            move = path[1]
+            while not move.on_line(vehicle.position, obstacles):
+                exclude.append(move)
+                target = self.__decide_target(vehicle, exclude)
+
+                path = self.path_finder.path(
+                    vehicle.position,
+                    target,
+                    exclude,
+                    vehicle.speed
+                )
+                if len(path) > 1:
+                    move = path[1]
+
+            self.game.map.vehicles[move] = vehicle
+            self.game.map.vehicles.pop(vehicle.position)
+            
             self.__move(vehicle, move)
 
     def __vehicle_action(self, vehicle):
