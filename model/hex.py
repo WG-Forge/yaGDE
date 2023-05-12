@@ -47,22 +47,24 @@ class Hex(NamedTuple):
         for diff in hexes_range(*args):
             yield self + diff
 
-    def on_line(self, other, obstacles, path):
+    def on_line(self, other, speed, path):
         '''
         Returns if this hex is one one line with the other and if there is no obstacle between them.
         
         <param name="other">Other hex.</param>
         '''
 
-        return not self.is_obstacle_between(other, obstacles, path)
-
-    def is_obstacle_between(self, other, obstacles, path):
         if self.q == other.q or self.r == other.r or self.s == other.s:
             # Other is aligned to the hex, let's check if there is obstacle between them
-            for node in path:
-                if node in  obstacles:
-                    return True
+            if self.is_obstacle_between(other, speed, path):
+                return False
+            return True
         return False
+
+    def is_obstacle_between(self, other, speed, path):
+        if len(path) <= speed + 1:
+            return False
+        return True
 
     @staticmethod
     def from_hex_response(hex: ResponseHex):

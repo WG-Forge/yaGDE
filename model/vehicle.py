@@ -109,7 +109,7 @@ class Vehicle:
         match self.type:
             case VehicleType.AT_SPG:
                 small_path = AStarPathfinding().path(self.position, target, {}, 1)
-                return in_range and self.position.on_line(target, obstacles, small_path)
+                return in_range and self.position.on_line(target, self.speed, small_path)
             case _:
                 return in_range
 

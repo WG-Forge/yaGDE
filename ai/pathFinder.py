@@ -28,7 +28,7 @@ class AStarPathfinding:
         self.size = size
         self.center = center
 
-    def __closest_neighbor(position: Hex, start: Hex) -> Hex:
+    def __closest_neighbor(self, position: Hex, start: Hex) -> Hex:
         res = position
         minDist = start.distance(position) + 8
         for node in position.neighbors():

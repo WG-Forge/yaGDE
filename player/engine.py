@@ -50,6 +50,9 @@ class Engine():
     def __shoot_with_vehicle(self, vehicle: Vehicle) -> bool:
         target = None
         top_prio = 0
+
+        base_nodes = self.game.map.get_base_nodes([])
+
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
             in_range = vehicle.in_shooting_range(
@@ -60,6 +63,9 @@ class Engine():
             if not can_attack or not in_range:
                 continue
             
+            if vehicle.position not in base_nodes and enemy.position not in base_nodes:
+                continue
+
             prio = 0
 
             # Add cap points to prio
@@ -78,6 +84,16 @@ class Engine():
             return True
 
         return False
+    
+    def __is_dangerous(self, vehicle: Vehicle, move: Hex):
+        enemy_vehicles = self.game.get_enemy_vehicles_for(vehicle.playerId)
+
+        for enemy in enemy_vehicles:
+            obstacles = self.game.map.get_obstacles_for(vehicle.playerId)
+            can_attack = self.game.check_neutrality(enemy, vehicle)
+            if can_attack and enemy.in_shooting_range(move, obstacles):
+                return True
+        return False
 
     def __decide_target(self, vehicle: Vehicle, exclude: List[Hex]) -> Hex:
         target = Hex(0, 0, 0)
@@ -85,6 +101,8 @@ class Engine():
 
         # We should find closest base target that is reachable
         if base_nodes is not None:
+            if len(base_nodes) == 0:
+                return target
             minDist = base_nodes[0].distance(vehicle.position)
             target = base_nodes[0]
 
@@ -121,12 +139,16 @@ class Engine():
                 return temp
         
         if vehicle.position in base_nodes:
-            # If you are already in base go to the closest next base node
+            # If you are already in base go to the closest next base node if it's safe
             minDist = None
 
             for node in base_nodes:
                 if node == vehicle.position:
                     continue
+                
+                if self.__is_dangerous(vehicle, node):
+                    continue
+
                 dist = node.distance(vehicle.position)
                 if minDist is None or dist < minDist:
                     target = node
@@ -162,13 +184,16 @@ class Engine():
                 vehicle.speed
             )
 
-            if len(path) < 1:
+            if len(path) <= 1:
                 return
             
             move = path[1]
+            
+            if move.distance(target) > vehicle.position.distance(target):
+                return
 
-            small_path = self.path_finder.path(vehicle.position, move, {}, 1)
-            if not move.is_obstacle_between(vehicle.position, obstacles, small_path):
+            small_path = self.path_finder.path(vehicle.position, move, obstacles, 1)
+            if not move.is_obstacle_between(vehicle.position, vehicle.speed, small_path):
                 break
 
             exclude.append(move)
