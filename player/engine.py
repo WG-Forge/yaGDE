@@ -49,7 +49,7 @@ class Engine():
 
     def __shoot_with_vehicle(self, vehicle: Vehicle) -> bool:
         target = None
-
+        top_prio = 0
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
             in_range = vehicle.in_shooting_range(
@@ -59,9 +59,19 @@ class Engine():
 
             if not can_attack or not in_range:
                 continue
+            
+            prio = 0
 
-            if target is None or target.hp > enemy.hp:
+            # Add cap points to prio
+            prio += enemy.capture_points
+
+            # If enemy is low hp add 3 points
+            if enemy.hp <= vehicle.damage:
+                prio += 3
+
+            if target is None or prio >= top_prio:
                 target = enemy
+                top_prio = prio
 
         if target is not None:
             self.__shoot(vehicle, target)
@@ -127,6 +137,7 @@ class Engine():
     def __move_vehicle(self, vehicle: Vehicle):
         obstacles = self.game.get_obstacles_for(self.player_id)
         target = Hex(0, 0, 0)
+        move = None
 
         # We should get all other vehicles except this one
         other_vehicles = []
@@ -140,37 +151,33 @@ class Engine():
             exclude.append(obst)
         for veh in other_vehicles:
             exclude.append(veh)
-        
-        target = self.__decide_target(vehicle, exclude)
 
-        path = self.path_finder.path(
-            vehicle.position,
-            target,
-            exclude,
-            vehicle.speed
-        )
+        while True:
+            target = self.__decide_target(vehicle, exclude)
 
-        if len(path) > 1:
-            #move = vehicle.pick_move(path)
-            move = path[1]
-            while not move.on_line(vehicle.position, obstacles):
-                exclude.append(move)
-                target = self.__decide_target(vehicle, exclude)
+            path = self.path_finder.path(
+                vehicle.position,
+                target,
+                exclude,
+                vehicle.speed
+            )
 
-                path = self.path_finder.path(
-                    vehicle.position,
-                    target,
-                    exclude,
-                    vehicle.speed
-                )
-                if len(path) > 1:
-                    move = path[1]
-
-            self.game.map.vehicles[move] = vehicle
-            self.game.map.vehicles.pop(vehicle.position)
+            if len(path) < 1:
+                return
             
-            self.__move(vehicle, move)
+            move = path[1]
 
+            small_path = self.path_finder.path(vehicle.position, move, {}, 1)
+            if not move.is_obstacle_between(vehicle.position, obstacles, small_path):
+                break
+
+            exclude.append(move)
+        
+        self.game.map.vehicles[move] = vehicle
+        self.game.map.vehicles.pop(vehicle.position)
+        
+        self.__move(vehicle, move)
+            
     def __vehicle_action(self, vehicle):
         shooted = self.__shoot_with_vehicle(vehicle)
 

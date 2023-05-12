@@ -1,6 +1,7 @@
 from typing import NewType, List
 from enum import Enum
 
+from ai.pathFinder import AStarPathfinding
 from model.hex import Hex
 from model.common import PlayerId
 from client.responses import Vehicle as ResponseVehicle
@@ -71,7 +72,7 @@ VEHICLE_SHOOTING_RANGE = {
 class Vehicle:
     def __init__(self, id: VehicleId, playerId: PlayerId,
                  vehicle_type: VehicleType, spawn: Hex,
-                 hp: int, position: Hex, bonus: bool):
+                 hp: int, position: Hex, bonus: bool, cap_points):
         self.id = id
         self.playerId = playerId
         self.type = vehicle_type
@@ -83,6 +84,7 @@ class Vehicle:
         self.position = position
         self.spawn = spawn
         self.bonus = bonus
+        self.capture_points = cap_points
 
     @staticmethod
     def from_vehicle_response(vid: ResponseVehicleId, vehicle: ResponseVehicle):
@@ -93,7 +95,8 @@ class Vehicle:
             spawn=Hex.from_hex_response(vehicle.spawn_position),
             hp=vehicle.health,
             position=Hex.from_hex_response(vehicle.position),
-            bonus=vehicle.shoot_range_bonus==1
+            bonus=vehicle.shoot_range_bonus==1,
+            cap_points=vehicle.capture_points
         )
 
     def in_shooting_range(self, target: Hex, obstacles: List[Hex]) -> bool:
@@ -105,7 +108,8 @@ class Vehicle:
 
         match self.type:
             case VehicleType.AT_SPG:
-                return in_range and self.position.on_line(target, obstacles)
+                small_path = AStarPathfinding().path(self.position, target, {}, 1)
+                return in_range and self.position.on_line(target, obstacles, small_path)
             case _:
                 return in_range
 

@@ -47,19 +47,21 @@ class Hex(NamedTuple):
         for diff in hexes_range(*args):
             yield self + diff
 
-    def on_line(self, other, obstacles):
+    def on_line(self, other, obstacles, path):
         '''
-        Returns if this hex is one one line with the other and if there is obstacle between them.
+        Returns if this hex is one one line with the other and if there is no obstacle between them.
         
         <param name="other">Other hex.</param>
         '''
 
+        return not self.is_obstacle_between(other, obstacles, path)
+
+    def is_obstacle_between(self, other, obstacles, path):
         if self.q == other.q or self.r == other.r or self.s == other.s:
-            # Yes enemy is in range but let's check if there is obstacle between them
-            if is_obstacle_betweenX(self, other, obstacles) or is_obstacle_betweenY(self, other, obstacles) or is_obstacle_betweenZ(self, other, obstacles):
-                return False
-            return True
-        
+            # Other is aligned to the hex, let's check if there is obstacle between them
+            for node in path:
+                if node in  obstacles:
+                    return True
         return False
 
     @staticmethod
@@ -112,7 +114,6 @@ def is_obstacle_betweenX(my_vehicle_position: Hex, enemy_vehicle_position: Hex, 
 
         # Take higher coordinates for end of a serach
         end_j = my_vehicle_position.r if my_vehicle_position.r > enemy_vehicle_position.r else enemy_vehicle_position.r
-
         while j < end_j: # Note here: we can check only one coordinate because the distance is same
             check_obstacle = Hex(my_vehicle_position.q, j, k)
             if check_obstacle in obstacles:
@@ -124,6 +125,9 @@ def is_obstacle_betweenX(my_vehicle_position: Hex, enemy_vehicle_position: Hex, 
 def is_obstacle_betweenY(my_vehicle_position: Hex, enemy_vehicle_position: Hex, obstacles: List[Hex]) -> bool:
     '''Function that gives True if there is obstacle between my_vehicle_position and enemy_vehicle_position on y axis'''
 
+    print("Positions")
+    print(my_vehicle_position)
+    print(enemy_vehicle_position)
     # The rest are same, just different coordinates
     if my_vehicle_position.r == enemy_vehicle_position.r:
         # Take lower coordinates for starting search
@@ -132,9 +136,11 @@ def is_obstacle_betweenY(my_vehicle_position: Hex, enemy_vehicle_position: Hex, 
 
         # Take higher coordinates for end of a serach
         end_j = my_vehicle_position.q if my_vehicle_position.q > enemy_vehicle_position.q else enemy_vehicle_position.q
-
+        print("Tests")
         while j < end_j: # Note here: we can check only one coordinate because the distance is same
             check_obstacle = Hex(j, my_vehicle_position.r, k)
+            print(check_obstacle)
+            print(obstacles)
             if check_obstacle in obstacles:
                 return True
             j += 1

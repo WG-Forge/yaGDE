@@ -17,7 +17,7 @@ from info import WINDOW_NAME, SERVER_ADDR, SERVER_PORT, game_name, num_of_player
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
-    level=logging.DEBUG)
+    level=logging.INFO)
 
 
 def handle_response(resp):
