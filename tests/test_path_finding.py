@@ -21,7 +21,7 @@ class DeserializeTestCase(unittest.TestCase):
         finder = AStarPathfinding(size, center)
 
         for start, end in permutations(center.range(size), 2):
-            path = finder.path(start, end)
+            path = finder.path(start, end, {})
             self.assertEqual(len(path), start.distance(end) + 1)
             self.check_path(path, start, end)
 
