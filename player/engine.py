@@ -30,12 +30,7 @@ class Engine():
         if vehicle.type == VehicleType.AT_SPG:
             # Fix for problem of AT_SPG because he can only shoot on neighbour hexs
             # We should just find closest neighbour
-            minDist = None
-            for neighbour in vehicle.position.neighbors():
-                dist = neighbour.distance(enemy.position)
-                if minDist is None or minDist > dist:
-                    minDist = dist
-                    target = neighbour
+            target = min(vehicle.position.neighbors(), key=enemy.position.distance)
         else:
             target = enemy.position
         self.actions.append(
