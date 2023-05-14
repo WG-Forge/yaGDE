@@ -50,9 +50,9 @@ class Engine():
 
         for enemy in self.game.get_enemy_vehicles_for(self.player_id):
             can_attack = self.game.check_neutrality(vehicle, enemy)
-            in_range = vehicle.in_shooting_range(
-                enemy.position, 
-                self.game.map.get_obstacles_for(self.player_id)
+            in_range = self.game.in_shooting_range(
+                vehicle,
+                enemy.position
             )
 
             if not can_attack or not in_range:
@@ -86,7 +86,7 @@ class Engine():
         for enemy in enemy_vehicles:
             obstacles = self.game.map.get_obstacles_for(vehicle.playerId)
             can_attack = self.game.check_neutrality(enemy, vehicle)
-            if can_attack and enemy.in_shooting_range(move, obstacles):
+            if can_attack and self.game.in_shooting_range(enemy, vehicle.position):
                 return True
         return False
 
@@ -187,8 +187,7 @@ class Engine():
             if move.distance(target) > vehicle.position.distance(target):
                 return
 
-            small_path = self.path_finder.path(vehicle.position, move, obstacles, 1)
-            if not move.is_obstacle_between(vehicle.position, vehicle.speed, small_path):
+            if not self.game.is_obstacle_between(vehicle, move):
                 break
 
             exclude.append(move)

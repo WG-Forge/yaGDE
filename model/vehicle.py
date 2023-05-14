@@ -99,20 +99,6 @@ class Vehicle:
             cap_points=vehicle.capture_points
         )
 
-    def in_shooting_range(self, target: Hex, obstacles: List[Hex]) -> bool:
-        dist = self.position.distance(target)
-        rl, ru = self.shooting_range
-        if self.bonus:
-            ru += 1
-        in_range = rl <= dist <= ru
-
-        match self.type:
-            case VehicleType.AT_SPG:
-                small_path = AStarPathfinding().path(self.position, target, {}, 1)
-                return in_range and self.position.on_line(target, self.speed, small_path)
-            case _:
-                return in_range
-
     def pick_move(self, path):
         '''
         Pick move target from path

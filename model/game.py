@@ -1,8 +1,10 @@
 from client.responses import MapResponse, GameStateResponse, GameActionsResponse
-from model.vehicle import Vehicle
+from model.vehicle import Vehicle, VehicleType
 from model.map import GameMap
 from model.common import PlayerId
 from model.action import TurnActions
+from ai.pathFinder import AStarPathfinding
+from model.hex import Hex
 
 
 class Game:
@@ -60,6 +62,41 @@ class Game:
         attacked_player = player_id in self.attack_matrix[enemy_id]
 
         return not was_attacked or attacked_player
+    
+    def is_obstacle_between(self, my_vehicle: Vehicle, destination: Hex):
+        path = AStarPathfinding().path(my_vehicle.position,
+                                       destination,
+                                       self.map.get_obstacles_for(my_vehicle.playerId),
+                                       1)
+        if len(path) <= my_vehicle.speed + 1:
+            return False
+        return True
+    
+    def on_line(self, vehicle: Vehicle, target: Hex):
+        '''
+        Returns if this hex is one one line with the other and if there is no obstacle between them.
+        
+        <param name="other">Other hex.</param>
+        '''
+
+        if vehicle.position.q == target.q or vehicle.position.r == target.r or vehicle.position.s == target.s:
+            # Other is aligned to the hex, let's check if there is obstacle between them
+            if not self.is_obstacle_between(vehicle, target):
+                return True
+        return False
+    
+    def in_shooting_range(self, vehicle: Vehicle, target: Hex) -> bool:
+        dist = vehicle.position.distance(target)
+        rl, ru = vehicle.shooting_range
+        if vehicle.bonus:
+            ru += 1
+        in_range = rl <= dist <= ru
+
+        match vehicle.type:
+            case VehicleType.AT_SPG:
+                return in_range and self.on_line(self, target)
+            case _:
+                return in_range
 
     def get_vehicles_for(self, player: PlayerId):
         return self.map.get_vehicles_for(player)
