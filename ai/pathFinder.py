@@ -90,8 +90,7 @@ class AStarPathfinding:
         while len(openNodes) != 0:
             # Popping the node with the lowest F value.
             currentHex = min(openNodes, key=openNodes.get)
-            currentNode = openNodes[currentHex]
-            del openNodes[currentHex]
+            currentNode = openNodes.pop(currentHex)
 
             # Adding the current Hex to the closed list.
             closedNodes[currentHex] = currentNode

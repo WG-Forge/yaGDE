@@ -151,7 +151,7 @@ class GameStateResponse(NamedTuple):
             players=[PlayerState.from_json(p) for p in j['players']],
             observers=[PlayerState.from_json(o) for o in j['observers']],
             current_player_idx=PlayerId.from_json(j['current_player_idx'])
-            if 'current_player_idx' in j and j['current_player_idx']
+            if 'current_player_idx' in j and j['current_player_idx'] is not None
             else None,
             finished=bool(j['finished']),
             vehicles={
