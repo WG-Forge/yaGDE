@@ -146,17 +146,7 @@ class GameMap:
         return res
     
     def get_closest_catapult(self, position: Hex) -> Hex:
-        catapults = []
-        for node, cont in self.contents.items():
-            if cont == Content.CATAPULT:
-                catapults.append(node)
-        
-        res = None
-        for cata in catapults:
-            if res is None or position.distance(cata) < position.distance(res):
-                res = cata
-
-        return res 
+        return min([node for node in self.contents.items() if cont == Content.CATAPULT], key=position.distance)
 
     def __repr__(self):
         return f"GameMap(size={self.size}, content={self.contents}, vehicles={self.vehicles})"
