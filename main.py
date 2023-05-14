@@ -1,6 +1,5 @@
 import logging
 from contextlib import AsyncExitStack
-import time
 import asyncio as aio
 import pygame
 
@@ -62,7 +61,7 @@ async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name:
     await stack.enter_async_context(observer_session)
     observer_login = LoginAction("yagde-test-user-observer",
                                  game=game_name,
-                                 num_players=num_of_players,
+                                 num_players=3,
                                  is_observer=True)
     observer_info = handle_response(
         await observer_session.login(observer_login)

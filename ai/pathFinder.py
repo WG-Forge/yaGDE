@@ -28,7 +28,7 @@ class AStarPathfinding:
         self.size = size
         self.center = center
 
-    def __closest_neighbor(position: Hex, start: Hex) -> Hex:
+    def __closest_neighbor(self, position: Hex, start: Hex) -> Hex:
         res = position
         minDist = start.distance(position) + 8
         for node in position.neighbors():
@@ -66,7 +66,7 @@ class AStarPathfinding:
             return self.__closest_free_node_to_start(start, closest, exclude)
         
 
-    def path(self, start: Hex, end: Hex, exclude: Set[Hex]) -> List[Hex]:
+    def path(self, start: Hex, end: Hex, exclude: Set[Hex], speed) -> List[Hex]:
         '''
         Finds path from given start point to end point. Returns an empty list if the path couldn't be found.
         
@@ -101,7 +101,7 @@ class AStarPathfinding:
                 break
 
             # Investigating each neighbor Hex of the current Hex.
-            for neighborHex in currentHex.neighbors():
+            for neighborHex in currentHex.range(0, speed+1):
 
                 # Ignoring too distant hexes.
                 if neighborHex.distance(self.center) > self.size:
