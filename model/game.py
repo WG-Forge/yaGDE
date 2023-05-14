@@ -94,7 +94,7 @@ class Game:
 
         match vehicle.type:
             case VehicleType.AT_SPG:
-                return in_range and self.on_line(self, target)
+                return in_range and self.on_line(vehicle, target)
             case _:
                 return in_range
 

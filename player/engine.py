@@ -79,16 +79,6 @@ class Engine():
             return True
 
         return False
-    
-    def __is_dangerous(self, vehicle: Vehicle, move: Hex):
-        enemy_vehicles = self.game.get_enemy_vehicles_for(vehicle.playerId)
-
-        for enemy in enemy_vehicles:
-            obstacles = self.game.map.get_obstacles_for(vehicle.playerId)
-            can_attack = self.game.check_neutrality(enemy, vehicle)
-            if can_attack and self.game.in_shooting_range(enemy, vehicle.position):
-                return True
-        return False
 
     def __decide_target(self, vehicle: Vehicle, exclude: List[Hex]) -> Hex:
         target = Hex(0, 0, 0)
@@ -139,9 +129,6 @@ class Engine():
 
             for node in base_nodes:
                 if node == vehicle.position:
-                    continue
-                
-                if self.__is_dangerous(vehicle, node):
                     continue
 
                 dist = node.distance(vehicle.position)

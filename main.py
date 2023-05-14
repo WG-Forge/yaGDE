@@ -13,7 +13,15 @@ from model.common import PlayerId
 from model.action import MoveAction, ShootAction
 from graphics.window import Window
 
-from info import WINDOW_NAME, SERVER_ADDR, SERVER_PORT, game_name, num_of_players, full, number_of_bots
+from info import (
+    WINDOW_NAME, 
+    SERVER_ADDR, 
+    SERVER_PORT, 
+    game_name, 
+    num_of_players, 
+    full, 
+    number_of_bots
+)
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
@@ -56,9 +64,12 @@ async def send_action(session: Session, action):
             raise RuntimeError(f"Unknown action type: {action}")
 
 
-async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name: str):
+async def create_sessions(stack: AsyncExitStack, game_name: str):
     observer_session = Session(SERVER_ADDR, SERVER_PORT)
     await stack.enter_async_context(observer_session)
+    global full
+    global num_of_players
+    global number_of_bots
     observer_login = LoginAction("yagde-test-user-observer",
                                  game=game_name,
                                  num_players=num_of_players,
@@ -73,7 +84,7 @@ async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name:
     for i in range(number_of_bots):
         player_session = Session(SERVER_ADDR, SERVER_PORT)
         await stack.enter_async_context(player_session)
-        player_login = LoginAction(f"yagde-test-user-{i}", game=game_name)
+        player_login = LoginAction(f"yagde-test-user-{i}", game=game_name, is_full=full)
         player_info = handle_response(
             await player_session.login(player_login)
         )
@@ -129,10 +140,11 @@ async def play():
     window_info = pygame.display.Info()
     window = Window(window_info.current_w, window_info.current_h, WINDOW_NAME)
     game = Game()
-
+    global number_of_rounds
     async with AsyncExitStack() as stack:
-        sessions = await create_sessions(stack, num_of_players, game_name)
+        sessions = await create_sessions(stack, game_name)
         observer = sessions.observer
+        
 
         map_response = handle_response(
             await observer.session.map()
@@ -147,14 +159,7 @@ async def play():
             )
             game.update_state(game_state)
 
-            if game_state.finished:
-                await aio.sleep(1)
-                w_name = ""
-                for player in  game_state.players:
-                    if game_state.winner == player.idx:
-                        w_name = player.name
-
-                window.end(w_name)
+            if game_state.finished and game_state.current_round == game_state.num_rounds:
                 break
 
             await make_turns(sessions, game_state.current_player_idx, game)
@@ -167,11 +172,19 @@ async def play():
 
             window.draw(game)
             window.update()
+        
 
         logging.info(f"Winner: {game_state.winner}")
 
+        w_name = ""
+        for player in  game_state.players:
+            if game_state.winner == player.idx:
+                w_name = player.name
+
+        window.end(w_name)
+
+
 if __name__ == "__main__":
-    number_of_rounds = 0
     sim_check = ""
     while sim_check.lower() != "y" and sim_check.lower() != "n":
         print("Do you want simulation?(Y/N) ", end="")
@@ -187,6 +200,15 @@ if __name__ == "__main__":
         if enter_type.lower() == "c":
             print("Enter number of players: ", end="")
             num_of_players = int(input())
+            is_full = ""
+            while is_full.lower() != "y" and is_full.lower() != "n":
+                print("Is game full? (Y/N)", end="")
+                is_full = input()
+
+            if is_full.lower() == "y":
+                full = True
+            else:
+                full = False
         else:
             num_of_players = 1
 
@@ -194,21 +216,6 @@ if __name__ == "__main__":
         game_name = input()
     else:
         number_of_bots = 3
-
-    is_full = ""
-    while is_full.lower() != "y" and is_full.lower() != "n":
-        print("Is game full? (Y/N)", end="")
-        is_full = input()
-
-    if is_full.lower == "y":
-        number_of_rounds=6
-        full = True
-    else:
-        number_of_rounds=1
-        full = False
-
-    
-    while number_of_rounds > 0:    
-        pygame.init()
-        aio.run(play())
-        number_of_rounds -= 1
+ 
+    pygame.init()
+    aio.run(play())

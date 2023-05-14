@@ -131,7 +131,9 @@ class WinPoints(NamedTuple):
 class GameStateResponse(NamedTuple):
     num_players: int
     num_turns: int
+    num_rounds: int
     current_turn: int
+    current_round: int
     players: List[PlayerState]
     observers: List[PlayerState]
     current_player_idx: Optional[PlayerId]
@@ -147,7 +149,9 @@ class GameStateResponse(NamedTuple):
         return GameStateResponse(
             num_players=int(j['num_players']),
             num_turns=int(j['num_turns']),
+            num_rounds=int(j['num_rounds']),
             current_turn=int(j['current_turn']),
+            current_round=int(j['current_round']),
             players=[PlayerState.from_json(p) for p in j['players']],
             observers=[PlayerState.from_json(o) for o in j['observers']],
             current_player_idx=PlayerId.from_json(j['current_player_idx'])
