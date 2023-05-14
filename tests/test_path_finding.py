@@ -21,7 +21,7 @@ class DeserializeTestCase(unittest.TestCase):
         finder = AStarPathfinding(size, center)
 
         for start, end in permutations(center.range(size), 2):
-            path = finder.path(start, end)
+            path = finder.path(start, end, {}, 1)
             self.assertEqual(len(path), start.distance(end) + 1)
             self.check_path(path, start, end)
 
@@ -39,7 +39,7 @@ class DeserializeTestCase(unittest.TestCase):
         for start, end in permutations(center.range(size), 2):
             if start in excluded or end in excluded:
                 continue
-            result = finder.path(start, end, excluded)\
+            result = finder.path(start, end, excluded, 1)\
                 # Path is longer by 5 in the worst case
             self.assertLessEqual(len(result), start.distance(end) + 5)
             self.check_path(result, start, end, excluded)
@@ -52,5 +52,5 @@ class DeserializeTestCase(unittest.TestCase):
         # Sphere around center
         excluded = set(center.range(2, 3))
         for start, end in product(center.range(2), center.range(3, size + 1)):
-            result = finder.path(start, end, excluded)
+            result = finder.path(start, end, excluded, 1)
             self.assertFalse(result)
