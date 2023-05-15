@@ -212,7 +212,7 @@ if __name__ == "__main__":
         else:
             num_of_players = 1
 
-        print("Enther game name: ", end="")
+        print("Enter game name: ", end="")
         game_name = input()
     else:
         number_of_bots = 3
