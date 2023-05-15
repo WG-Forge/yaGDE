@@ -1,6 +1,8 @@
 from model.common import Content
 
 
+WINDOW_NAME = "YAGDE"
+
 CONTENT_COLORS = {
     Content.BASE: (0, 255, 0, 128),
     Content.OBSTACLE: (0, 0, 0),

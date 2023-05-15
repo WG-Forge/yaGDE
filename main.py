@@ -12,16 +12,18 @@ from model.game import Game
 from model.common import PlayerId
 from model.action import MoveAction, ShootAction
 from graphics.window import Window
+from graphics.constants import WINDOW_NAME
 
-from info import (
-    WINDOW_NAME, 
+from info import ( 
     SERVER_ADDR, 
-    SERVER_PORT, 
-    game_name, 
-    num_of_players, 
-    full, 
-    number_of_bots
+    SERVER_PORT
 )
+
+
+game_name = "yagde-test-game"
+num_of_players = 3
+full = False
+number_of_bots = 1
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
