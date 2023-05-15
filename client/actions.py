@@ -11,6 +11,7 @@ class LoginAction(NamedTuple):
     num_turns: Optional[int] = None
     num_players: Optional[int] = None
     is_observer: Optional[bool] = None
+    is_full: Optional[bool] = None
 
 
 class ChatAction(NamedTuple):
