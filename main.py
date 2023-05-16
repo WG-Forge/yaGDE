@@ -1,6 +1,5 @@
 import logging
 from contextlib import AsyncExitStack
-import time
 import asyncio as aio
 import pygame
 
@@ -13,13 +12,22 @@ from model.game import Game
 from model.common import PlayerId
 from model.action import MoveAction, ShootAction
 from graphics.window import Window
+from graphics.constants import WINDOW_NAME
+
+from info import ( 
+    SERVER_ADDR, 
+    SERVER_PORT
+)
+
+
+game_name = "yagde-test-game"
+num_of_players = 3
+full = False
+number_of_bots = 1
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     level=logging.INFO)
-
-SERVER_ADDR = "wgforge-srv.wargaming.net"
-SERVER_PORT = 443
 
 
 def handle_response(resp):
@@ -58,23 +66,27 @@ async def send_action(session: Session, action):
             raise RuntimeError(f"Unknown action type: {action}")
 
 
-async def create_sessions(stack: AsyncExitStack, num_of_players: int, game_name: str):
+async def create_sessions(stack: AsyncExitStack, game_name: str):
     observer_session = Session(SERVER_ADDR, SERVER_PORT)
     await stack.enter_async_context(observer_session)
+    global full
+    global num_of_players
+    global number_of_bots
     observer_login = LoginAction("yagde-test-user-observer",
                                  game=game_name,
                                  num_players=num_of_players,
-                                 is_observer=True)
+                                 is_observer=True,
+                                 is_full=full)
     observer_info = handle_response(
         await observer_session.login(observer_login)
     )
     observer = Client(observer_info, observer_session)
 
     players = []
-    for i in range(num_of_players):
+    for i in range(number_of_bots):
         player_session = Session(SERVER_ADDR, SERVER_PORT)
         await stack.enter_async_context(player_session)
-        player_login = LoginAction(f"yagde-test-user-{i}", game=game_name)
+        player_login = LoginAction(f"yagde-test-user-{i}", game=game_name, is_full=full)
         player_info = handle_response(
             await player_session.login(player_login)
         )
@@ -101,7 +113,6 @@ async def make_turns(sessions: Sessions, current_player_idx: ClientPlayerId, gam
 
             actions = engine.make_turn()
             for action in actions:
-                # TODO: Some actions fail (eg occupied hex in move), FIX IT
                 await send_action(player.session, action)
 
             turn = turns.create_task(player.session.turn())
@@ -128,15 +139,14 @@ async def make_turns(sessions: Sessions, current_player_idx: ClientPlayerId, gam
 
 
 async def play():
-    num_of_players = 3
-    game_name = f"yagde-test-game-{time.time()}"
-
-    window = Window(1400, 1200, "YAGDE")
+    window_info = pygame.display.Info()
+    window = Window(window_info.current_w, window_info.current_h, WINDOW_NAME)
     game = Game()
-
+    global number_of_rounds
     async with AsyncExitStack() as stack:
-        sessions = await create_sessions(stack, num_of_players, game_name)
+        sessions = await create_sessions(stack, game_name)
         observer = sessions.observer
+        
 
         map_response = handle_response(
             await observer.session.map()
@@ -145,13 +155,13 @@ async def play():
         game.init_map(map_response)
 
         while True:
+            pygame.event.clear()
             game_state = handle_response(
                 await observer.session.game_state()
             )
             game.update_state(game_state)
 
-            if game_state.finished:
-                await aio.sleep(1)
+            if game_state.finished and game_state.current_round == game_state.num_rounds:
                 break
 
             await make_turns(sessions, game_state.current_player_idx, game)
@@ -164,12 +174,50 @@ async def play():
 
             window.draw(game)
             window.update()
-
-            # Wait for a while
-            await aio.sleep(1)
+        
 
         logging.info(f"Winner: {game_state.winner}")
 
+        w_name = ""
+        for player in  game_state.players:
+            if game_state.winner == player.idx:
+                w_name = player.name
+
+        window.end(w_name)
+
+
 if __name__ == "__main__":
+    sim_check = ""
+    while sim_check.lower() != "y" and sim_check.lower() != "n":
+        print("Do you want simulation?(Y/N) ", end="")
+        sim_check = input()
+
+    if sim_check.lower() == "n":
+        number_of_bots = 1
+        enter_type = ""
+        while enter_type.lower() != 'j' and enter_type.lower() != 'c':
+            print("Join or creating game? (J/C) ", end="")
+            enter_type = input()
+
+        if enter_type.lower() == "c":
+            print("Enter number of players: ", end="")
+            num_of_players = int(input())
+            is_full = ""
+            while is_full.lower() != "y" and is_full.lower() != "n":
+                print("Is game full? (Y/N)", end="")
+                is_full = input()
+
+            if is_full.lower() == "y":
+                full = True
+            else:
+                full = False
+        else:
+            num_of_players = 1
+
+        print("Enter game name: ", end="")
+        game_name = input()
+    else:
+        number_of_bots = 3
+ 
     pygame.init()
     aio.run(play())

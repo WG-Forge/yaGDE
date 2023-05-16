@@ -1,10 +1,13 @@
-from typing import *
+from typing import NewType, List
+from enum import Enum
 
+from ai.pathFinder import AStarPathfinding
 from model.hex import Hex
-from model.common import *
+from model.common import PlayerId
 from client.responses import Vehicle as ResponseVehicle
 from client.common import VehicleId as ResponseVehicleId
 from client.responses import VehicleType as ResponseVehicleType
+
 
 VehicleId = NewType('VehicleId', int)
 
@@ -68,46 +71,41 @@ VEHICLE_SHOOTING_RANGE = {
 
 class Vehicle:
     def __init__(self, id: VehicleId, playerId: PlayerId,
-                 typ: VehicleType, spawn: Hex,
-                 hp: int, position: Hex):
+                 vehicle_type: VehicleType, spawn: Hex,
+                 hp: int, position: Hex, bonus: bool, cap_points):
         self.id = id
         self.playerId = playerId
-        self.type = typ
+        self.type = vehicle_type
         self.hp = hp
-        self.max_hp = VEHICLE_MAX_HP[typ]
-        self.speed = VEHICLE_SPEED_POINTS[typ]
-        self.damage = VEHICLE_DAMAGE_POINTS[typ]
-        self.shooting_range = VEHICLE_SHOOTING_RANGE[typ]
+        self.max_hp = VEHICLE_MAX_HP[vehicle_type]
+        self.speed = VEHICLE_SPEED_POINTS[vehicle_type]
+        self.damage = VEHICLE_DAMAGE_POINTS[vehicle_type]
+        self.shooting_range = VEHICLE_SHOOTING_RANGE[vehicle_type]
         self.position = position
         self.spawn = spawn
+        self.bonus = bonus
+        self.capture_points = cap_points
 
     @staticmethod
     def from_vehicle_response(vid: ResponseVehicleId, vehicle: ResponseVehicle):
         return Vehicle(
             id=VehicleId(vid),
             playerId=PlayerId(vehicle.player_id),
-            typ=VehicleType.from_reponse_vehicle_type(vehicle.vehicle_type),
+            vehicle_type=VehicleType.from_reponse_vehicle_type(vehicle.vehicle_type),
             spawn=Hex.from_hex_response(vehicle.spawn_position),
             hp=vehicle.health,
             position=Hex.from_hex_response(vehicle.position),
+            bonus=vehicle.shoot_range_bonus==1,
+            cap_points=vehicle.capture_points
         )
 
-    def in_shooting_range(self, target: Hex) -> bool:
-        dist = self.position.distance(target)
-        rl, ru = self.shooting_range
-        in_range = rl <= dist <= ru
-
-        match self.type:
-            case VehicleType.AT_SPG:
-                return in_range and self.position.on_line(target)
-            case _:
-                return in_range
-
     def pick_move(self, path):
-        # Pick move target from path
-        #
-        # <param name="path">Path to target</param>
-        # <returns>Move target</returns>
+        '''
+        Pick move target from path
+        
+        <param name="path">Path to target</param>
+        <returns>Move target</returns>
+        '''
 
         if len(path) > self.speed:
             return path[self.speed]

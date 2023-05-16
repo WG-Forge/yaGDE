@@ -1,4 +1,4 @@
-from typing import *
+from typing import NamedTuple, List, Set
 from itertools import permutations
 
 from client.common import Hex as ResponseHex
@@ -16,9 +16,11 @@ class Hex(NamedTuple):
         return Hex(self.q - other.q, self.r - other.r, self.s - other.s)
 
     def distance(self, other=None):
-        # Returns the distance between two hexes.
-        #
-        # <param name="other">Other hex.</param>
+        '''
+        Returns the distance between two hexes.
+        
+        <param name="other">Other hex.</param>
+        '''
 
         if other is None:
             other = Hex(0, 0, 0)
@@ -26,27 +28,29 @@ class Hex(NamedTuple):
         return sum(map(abs, self - other)) // 2
 
     def neighbors(self, dist: int = 1):
-        # Returns the neighbors of the hex.
-        #
-        # <param name="dist">Distance from the hex to return neighbors at.</param>
+        '''
+        Returns the neighbors of the hex.
+        
+        <param name="dist">Distance from the hex to return neighbors at.</param>
+        '''
 
         for diff in hexes_at(dist):
             yield self + diff
 
     def range(self, *args):
-        # Returns the hexes in the given range.
-        #
-        # <param name="args">Range to return hexes in.</param>
+        '''
+        Returns the hexes in the given range.
+        
+        <param name="args">Range to return hexes in.</param>
+        '''
 
         for diff in hexes_range(*args):
             yield self + diff
 
-    def on_line(self, other):
-        # Returns if this hex is one one line with the other.
-        #
-        # <param name="other">Other hex.</param>
-
-        return self.q == other.q or self.r == other.r or self.s == other.s
+    def is_obstacle_between(self, other, speed, path):
+        if len(path) <= speed + 1:
+            return False
+        return True
 
     @staticmethod
     def from_hex_response(hex: ResponseHex):
@@ -54,9 +58,11 @@ class Hex(NamedTuple):
 
 
 def hexes_at(dist: int = 0):
-    # Returns the hexes at the given distance from the origin.
-    #
-    # <param name="dist">Distance from the origin.</param>
+    '''
+    Returns the hexes at the given distance from the origin.
+    
+    <param name="dist">Distance from the origin.</param>
+    '''
 
     indexes = {0, 1, 2}
     result = set()
@@ -74,10 +80,13 @@ def hexes_at(dist: int = 0):
 
 
 def hexes_range(*args):
-    # Return hexes in the given range of distances from the origin.
-    #
-    # <param name="args">Range to return hexes in.</param>
+    '''
+    Return hexes in the given range of distances from the origin.
+    
+    <param name="args">Range to return hexes in.</param>
+    '''
 
     for dist in range(*args):
         for hex in hexes_at(dist):
             yield hex
+            
